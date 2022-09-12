@@ -47,7 +47,7 @@ impl LambdaNode {
 
     pub fn binds_variable(&self, variable: &str) -> bool {
         match self {
-            LambdaNode::Variable(var) => false,
+            LambdaNode::Variable(_) => false,
             LambdaNode::Abstraction(var_name, term) => var_name == variable || term.binds_variable(variable),
             LambdaNode::Application(left, right) => left.binds_variable(variable) || right.binds_variable(variable),
         }
@@ -295,10 +295,6 @@ impl LambdaNode {
 }
 
 impl ReductionLambdaNode {
-    fn is_reducible(&self) -> bool {
-        return self.marked_reduction().is_some();
-    }
-
     fn marked_reduction(&self) -> Option<LambdaNode> {
         match self {
             ReductionLambdaNode::Variable(_) => None,
@@ -364,8 +360,8 @@ fn fresh_var(old_var: &str, rotten: HashSet<String>) -> String {
 
 pub fn lambda_matcher(parser: Parser) -> impl FnMut(&str) -> IResult<&str, LambdaNode> {
     match parser {
-        Default => match_lambda_default,
-        Pure => match_lambda_pure,
+        Parser::Default => match_lambda_default,
+        Parser::Pure => match_lambda_pure,
     }
 }
 

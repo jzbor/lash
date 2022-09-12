@@ -40,7 +40,7 @@ impl State {
         if self.history.len() > 0 {
             for i in 0..last_index {
                 let entry = &self.history[last_index - i];
-                if let LineType::Lambda(t) = &entry.parsed {
+                if let LineType::Lambda(_) = &entry.parsed {
                     return Some(entry);
                 }
             }

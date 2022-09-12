@@ -8,7 +8,6 @@ use nom::{
 use lambda::*;
 use commands::*;
 use state::*;
-use builtins::*;
 
 mod lambda;
 mod commands;
@@ -25,7 +24,6 @@ pub enum LineType {
 fn match_wrapper(config: Config, s: &str) -> IResult<&str, LineType> {
     let to_command = |c| LineType::Command(c);
     let to_lambda = |l| LineType::Lambda(l);
-    let to_error = |e| LineType::Error(e);
 
     return alt((map(lambda_matcher(config.parser), to_lambda),
                 map(match_command, to_command)))(s);
@@ -61,7 +59,7 @@ fn main() {
 
     loop {
         print!("\n-> ");
-        stdout().flush();
+        stdout().flush().unwrap();
         let mut input = String::new();
         stdin().read_line(&mut input).unwrap();
         input = input.trim().to_string();
@@ -81,8 +79,6 @@ fn handle_command(state: &State, input: String, command: Command) -> HistoryEntr
 
 fn handle_lambda(state: &State, input: String, tree: LambdaNode) -> HistoryEntry {
     let variable_substitutions = 0;
-    let builtin_substitutions = 0;
-
     let (tree, builtin_substitutions) = tree.with_vars(&state.builtins, state.config.parser);
     let (normal, nbeta) = tree.normalize(ReductionStrategy::Normal);
     println!("{}", normal.to_string());
@@ -97,7 +93,7 @@ fn handle_lambda(state: &State, input: String, tree: LambdaNode) -> HistoryEntry
     };
 }
 
-fn handle_error(state: &State, input: String, msg: &str) -> HistoryEntry {
+fn handle_error(_state: &State, input: String, msg: &str) -> HistoryEntry {
     let output = format!("An error occured: {}", msg);
     println!("{}", output);
     let mut hist_entry = HistoryEntry::default();
@@ -105,26 +101,4 @@ fn handle_error(state: &State, input: String, msg: &str) -> HistoryEntry {
     hist_entry.parsed = LineType::Error(msg.to_string());
     hist_entry.output = output;
     return hist_entry;
-}
-
-fn reduction_info(tree: &LambdaNode, strategy: ReductionStrategy) {
-    print!("  Reduction ({:?}): ", strategy);
-    let redex_option = tree.next_redex(strategy);
-    if let Some((redex, _depth)) = redex_option {
-        let reduction_step = tree.reduce(strategy);
-        println!("{} => {}", redex.to_string(), reduction_step.to_string());
-        let (normal, nbeta) = tree.normalize(strategy);
-        println!("\tNormalized: {}", normal.to_string());
-        println!("\tin {} steps", nbeta);
-    } else {
-        println!("Already normal");
-    }
-}
-
-fn lambda_info(tree: &LambdaNode) {
-    println!("Tree: {:?}", tree);
-    println!("\t(as string: {})", tree.to_string());
-    reduction_info(&tree, ReductionStrategy::Normal);
-    reduction_info(&tree, ReductionStrategy::Applicative);
-    println!();
 }
