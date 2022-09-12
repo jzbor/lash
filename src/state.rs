@@ -36,9 +36,9 @@ impl State {
     }
 
     pub fn last_lambda(&self) -> Option<&HistoryEntry> {
-        let last_index = self.history.len() - 1;
         if self.history.len() > 0 {
-            for i in 0..last_index {
+            let last_index = self.history.len() - 1;
+            for i in 0..self.history.len() {
                 let entry = &self.history[last_index - i];
                 if let LineType::Lambda(_) = &entry.parsed {
                     return Some(entry);
@@ -68,6 +68,16 @@ impl Default for HistoryEntry {
             nbeta: 0,
             var_subs: 0,
             bi_subs: 0,
+        }
+    }
+}
+
+impl HistoryEntry {
+    pub fn to_string(&self) -> String {
+        match self.parsed {
+            LineType::Lambda(_) => format!("{}\n => {}", self.input, self.output),
+            LineType::Error(_) => format!("{} [{}]", self.input, self.output),
+            _ => format!("{}", self.input),
         }
     }
 }
