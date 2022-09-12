@@ -9,10 +9,10 @@ It is not fully tested yet, but you can help with that :).
 ## TODOs:
 * [X] `:hist` command
 * [X] variable assignments
+* [X] printing in default syntax
 * [ ] `:steps` command
 * [ ] cli arguments
 * [ ] error handling
-* [ ] printing in default syntax
 * [ ] test pure parser with application like "asdf jkl"
 * [ ] add license
 

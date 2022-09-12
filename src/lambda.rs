@@ -271,11 +271,24 @@ impl LambdaNode {
         match self {
             LambdaNode::Variable(name) => name.clone(),
             LambdaNode::Abstraction(var_name, term)
-                => format!("({}{} . {})", '\\', var_name, term.to_string()),
+                => format!("{}{} . {}", '\\', var_name, term.to_string()),
             LambdaNode::Application(term1, term2)
-                => format!("{} {}", term1.to_string(), term2.to_string()),
+                => {
+                    let s1 = if let LambdaNode::Variable(name) = &**term1 {
+                        format!("{}", name)
+                    } else {
+                        format!("({})", term1.to_string())
+                    };
+                    let s2 = if let LambdaNode::Variable(name) = &**term2 {
+                        format!("{}", name)
+                    } else {
+                        format!("({})", term2.to_string())
+                    };
+                    format!("{} {}", s1, s2)
+                },
         }
     }
+
 
     pub fn substitute_var(&self, var_name: &str, replacement: &LambdaNode) -> (LambdaNode, u32) {
         let mut sigma = HashMap::new();

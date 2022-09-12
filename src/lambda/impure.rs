@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use nom::{
     branch::*,
     multi::*,
@@ -14,14 +15,15 @@ pub fn match_lambda(s: &str) -> IResult<&str, LambdaNode> {
 fn match_abstraction(s: &str) -> IResult<&str, LambdaNode> {
     let (rest, _) = match_lambda_sign(s)?;
     let (rest, _) = space0(rest)?;
-    let (rest, mut variables) = match_variable_list(rest)?;
+    let (rest, mut variables) = map(match_variable_list, |v| VecDeque::from(v))(rest)?;
     let (rest, _) = space0(rest)?;
     let (rest, _) = char('.')(rest)?;
     let (rest, _) = space0(rest)?;
     let (rest, inner) = match_lambda(rest)?;
 
-    let mut current_abstraction = LambdaNode::Abstraction(variables.pop().unwrap().to_owned(), Box::new(inner));
-    for variable in variables {
+    let mut current_abstraction = LambdaNode::Abstraction(variables.pop_back().unwrap()
+                                                          .to_owned(), Box::new(inner));
+    while let Some(variable) = variables.pop_back() {
         current_abstraction = LambdaNode::Abstraction(variable.to_owned(), Box::new(current_abstraction));
     }
 
