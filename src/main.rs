@@ -129,7 +129,7 @@ fn main() {
     let mut state = State::init();
     let mut rl = Editor::<()>::new().unwrap();
     loop {
-        let line = rl.readline("><> ");
+        let line = rl.readline("[λ] ");
         match line {
             Ok(input) => {
                 rl.add_history_entry(input.as_str());

@@ -42,12 +42,10 @@ pub fn info(state: &State) -> String {
     let option = state.last_lambda();
     match option {
         Some(e) => format!(
-"input: {}
-output: {}
-beta reductions: {}
+"beta reductions: {}
 builtin substitutions: {}
 variable substitutions: {}",
-                           e.input, e.output, e.nbeta, e.bi_subs, e. var_subs),
+                           e.nbeta, e.bi_subs, e. var_subs),
         None => format!("no history entry found"),
     }
 }
@@ -56,14 +54,15 @@ pub fn steps(state: &State) -> String {
     if let Some(hist_entry) = state.last_lambda() {
         if let LineType::Lambda(initial_tree) = &hist_entry.parsed {
             let mut lines = Vec::new();
-            lines.push(hist_entry.input.clone());
             let mut tree = initial_tree.clone();
+            lines.push(hist_entry.input.clone());
+            lines.push(format!("   = {}", tree.to_string()));
             loop {
                 let t = tree.reduce(state.config.strategy);
-                lines.push(format!("  -> {}", t.to_string()));
                 if t == tree {
                     break;
                 } else {
+                    lines.push(format!("  -> {}", t.to_string()));
                     tree = t;
                 }
             }
@@ -81,9 +80,9 @@ pub fn match_command(s: &str) -> IResult<&str, Command> {
     let (rest, _) = space0(rest)?;
     let command_matchers = (
         match_echo,
-        match_hist,
-        match_info,
-        match_steps,
+        argless_matcher("hist", Command::History()),
+        argless_matcher("info", Command::Info()),
+        argless_matcher("steps", Command::Steps()),
     );
     return alt(command_matchers)(rest);
 }
@@ -95,20 +94,11 @@ fn match_echo(s: &str) -> IResult<&str, Command> {
     return Ok((rest, Command::Echo(output.to_owned())));
 }
 
-fn match_hist(s: &str) -> IResult<&str, Command> {
-    let (rest, _) = tag("hist")(s)?;
-    let (rest, _) = space0(rest)?;
-    return Ok((rest, Command::History()));
-}
-
-fn match_info(s: &str) -> IResult<&str, Command> {
-    let (rest, _) = tag("info")(s)?;
-    let (rest, _) = space0(rest)?;
-    return Ok((rest, Command::Info()));
-}
-
-fn match_steps(s: &str) -> IResult<&str, Command> {
-    let (rest, _) = tag("steps")(s)?;
-    let (rest, _) = space0(rest)?;
-    return Ok((rest, Command::Steps()));
+fn argless_matcher(keyword: &str, command: Command) -> impl FnMut(&str) -> IResult<&str, Command> {
+    let owned_keyword = keyword.to_owned();
+    return move |s: &str| {
+        let (rest, _) = tag(owned_keyword.as_str())(s)?;
+        let (rest, _) = space0(rest)?;
+        return Ok((rest, command.clone()));
+    };
 }

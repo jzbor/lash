@@ -276,6 +276,8 @@ impl LambdaNode {
                 => {
                     let s1 = if let LambdaNode::Variable(name) = &**term1 {
                         format!("{}", name)
+                    } else if let LambdaNode::Application(_, _) = &**term1 {
+                        format!("{}", term1.to_string())
                     } else {
                         format!("({})", term1.to_string())
                     };
