@@ -25,7 +25,7 @@ fn handle_assignment(state: &mut State, input: String, name: String, value: Stri
     return hist_entry;
 }
 
-fn handle_command(state: &State, input: String, command: Command) -> HistoryEntry {
+fn handle_command(state: &mut State, input: String, command: Box<dyn Command>) -> HistoryEntry {
     let output = command.execute(state);
     println!("{}", output);
     let mut hist_entry = HistoryEntry::default();

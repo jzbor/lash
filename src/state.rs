@@ -3,14 +3,27 @@ use crate::commands::*;
 use crate::lambda::*;
 use crate::builtins::*;
 
-#[derive(Debug,Clone)]
+#[derive(Debug)]
 pub enum LineType {
     Assignment(String, String),
-    Command(Command),
+    Command(Box<dyn Command>),
     EOF(),
     Error(String),
     Lambda(LambdaNode),
     Nop(),
+}
+
+impl Clone for LineType {
+    fn clone(&self) -> LineType {
+        match self {
+            LineType::Assignment(name, value) => LineType::Assignment(name.clone(), value.clone()),
+            LineType::Command(command) => LineType::Command(command.clone_to_box()),
+            LineType::EOF() => LineType::EOF(),
+            LineType::Error(msg) => LineType::Error(msg.clone()),
+            LineType::Lambda(tree) => LineType::Lambda(tree.clone()),
+            LineType::Nop() => LineType::Nop(),
+        }
+    }
 }
 
 #[derive(Debug,Clone)]

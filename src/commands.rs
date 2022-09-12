@@ -1,7 +1,10 @@
+use core::fmt::Debug;
 use nom::{
     branch::*,
-    character::complete::*,
     bytes::complete::*,
+    character::complete::*,
+    combinator::*,
+    sequence::*,
     combinator,
     IResult
 };
@@ -9,96 +12,164 @@ use nom::{
 use crate::state::*;
 
 
-#[derive(Debug,Clone)]
-pub enum Command {
-    Echo(String),
-    History(),
-    Info(),
-    Steps(),
+#[derive(Clone,Debug,Default)]
+struct EchoCommand { msg: String }
+
+#[derive(Clone,Debug,Default)]
+struct HistoryCommand;
+
+#[derive(Clone,Debug,Default)]
+struct InfoCommand;
+
+#[derive(Clone,Debug,Default)]
+struct StepsCommand;
+
+
+pub trait Command: Debug {
+    fn execute(&self, state: &mut State) -> String;
+    fn clone_to_box(&self) -> Box<dyn Command>;
+    fn keyword() -> &'static str where Self: Sized;
+    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> where Self: Sized;
+
+    fn match_keyword(s: &str) -> IResult<&str, ()> where Self: Sized{
+        return map(tag(Self::keyword()), |_| ())(s);
+    }
+
+    fn match_command(s: &str) -> IResult<&str, Box<dyn Command>> where Self: Sized {
+        let (rest, _) = tag(Self::keyword())(s)?;
+        let (rest, _) = alt((recognize(space1), recognize(pair(space0,eof))))(rest)?;
+        return Self::match_arguments(rest);
+    }
 }
 
-impl Command {
-    pub fn execute(&self, state: &State) -> String {
-        match self {
-            Command::Echo(s) => format!(" {} ", s),
-            Command::History() => history(state),
-            Command::Info() => info(state),
-            Command::Steps() => steps(state),
+
+impl Command for EchoCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, _state: &mut State) -> String {
+        return format!(" {} ", self.msg);
+    }
+
+    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+        let (rest, output) = combinator::rest(s)?;
+        return Ok((rest, Box::new(EchoCommand { msg: output.to_owned() })));
+    }
+
+    fn keyword() -> &'static str {
+        return "echo";
+    }
+}
+
+impl Command for HistoryCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> String {
+        if state.history.is_empty() {
+            return format!("no history entry found");
+        } else {
+            let items: Vec<String> = state.history.iter()
+                .map(|e| e.to_string()).collect();
+            return items.join("\n");
         }
     }
-}
 
-pub fn history(state: &State) -> String {
-    if state.history.is_empty() {
-        return format!("no history entry found");
-    } else {
-        let items: Vec<String> = state.history.iter()
-            .map(|e| e.to_string()).collect();
-        return items.join("\n");
+    fn keyword() -> &'static str {
+        return "hist";
+    }
+
+    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+        return match_no_arguments::<Self>()(s);
     }
 }
 
-pub fn info(state: &State) -> String {
-    let option = state.last_lambda();
-    match option {
-        Some(e) => format!(
+impl Command for InfoCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> String {
+        let option = state.last_lambda();
+        match option {
+            Some(e) => format!(
 "beta reductions: {}
 builtin substitutions: {}
 variable substitutions: {}",
-                           e.nbeta, e.bi_subs, e. var_subs),
-        None => format!("no history entry found"),
-    }
-}
-
-pub fn steps(state: &State) -> String {
-    if let Some(hist_entry) = state.last_lambda() {
-        if let LineType::Lambda(initial_tree) = &hist_entry.parsed {
-            let mut lines = Vec::new();
-            let mut tree = initial_tree.clone();
-            lines.push(hist_entry.input.clone());
-            lines.push(format!("   = {}", tree.to_string()));
-            loop {
-                let t = tree.reduce(state.config.strategy);
-                if t == tree {
-                    break;
-                } else {
-                    lines.push(format!("  -> {}", t.to_string()));
-                    tree = t;
-                }
-            }
-            return lines.join("\n");
-        } else {
-            panic!("last_lambda() didn't return lambda entry");
+                               e.nbeta, e.bi_subs, e. var_subs),
+            None => format!("no history entry found"),
         }
-    } else {
-        return String::from("no history entry found");
+    }
+
+    fn keyword() -> &'static str {
+        return "info";
+    }
+
+    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+        return match_no_arguments::<Self>()(s);
     }
 }
 
-pub fn match_command(s: &str) -> IResult<&str, Command> {
+impl Command for StepsCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> String {
+        if let Some(hist_entry) = state.last_lambda() {
+            if let LineType::Lambda(initial_tree) = &hist_entry.parsed {
+                let mut lines = Vec::new();
+                let mut tree = initial_tree.clone();
+                lines.push(hist_entry.input.clone());
+                lines.push(format!("   = {}", tree.to_string()));
+                loop {
+                    let t = tree.reduce(state.config.strategy);
+                    if t == tree {
+                        break;
+                    } else {
+                        lines.push(format!("  -> {}", t.to_string()));
+                        tree = t;
+                    }
+                }
+                return lines.join("\n");
+            } else {
+                panic!("last_lambda() didn't return lambda entry");
+            }
+        } else {
+            return String::from("no history entry found");
+        }
+    }
+
+    fn keyword() -> &'static str {
+        return "steps";
+    }
+
+    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+        return match_no_arguments::<Self>()(s);
+    }
+}
+
+fn match_no_arguments<T>() -> impl FnMut(&str) -> IResult<&str, Box<dyn Command>>
+        where T: Command + Default + 'static {
+    return |s| {
+        let (rest, _) = eof(s)?;
+        Ok((rest, Box::new(T::default())))
+    };
+}
+
+
+pub fn match_command(s: &str) -> IResult<&str, Box<dyn Command>> {
     let (rest, _) = char(':')(s)?;
     let (rest, _) = space0(rest)?;
+
     let command_matchers = (
-        match_echo,
-        argless_matcher("hist", Command::History()),
-        argless_matcher("info", Command::Info()),
-        argless_matcher("steps", Command::Steps()),
+        EchoCommand::match_command,
+        HistoryCommand::match_command,
+        InfoCommand::match_command,
+        StepsCommand::match_command,
     );
+
     return alt(command_matchers)(rest);
-}
-
-fn match_echo(s: &str) -> IResult<&str, Command> {
-    let (rest, _) = tag("echo")(s)?;
-    let (rest, _) = space1(rest)?;
-    let (rest, output) = combinator::rest(rest)?;
-    return Ok((rest, Command::Echo(output.to_owned())));
-}
-
-fn argless_matcher(keyword: &str, command: Command) -> impl FnMut(&str) -> IResult<&str, Command> {
-    let owned_keyword = keyword.to_owned();
-    return move |s: &str| {
-        let (rest, _) = tag(owned_keyword.as_str())(s)?;
-        let (rest, _) = space0(rest)?;
-        return Ok((rest, command.clone()));
-    };
 }
