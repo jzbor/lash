@@ -7,12 +7,13 @@ The shell can evaluate lambda expressions or execute [commands](#commands).
 It is not fully tested yet, but you can help with that :).
 
 ## TODOs:
-* [ ] `:hist` command
+* [X] `:hist` command
 * [ ] `:steps` command
 * [ ] cli arguments
 * [ ] error handling
 * [ ] printing in default syntax
 * [ ] test pure parser with application like "asdf jkl"
+* [ ] add license
 
 ## Commands
 * `:echo <msg>`: output message to stdout
