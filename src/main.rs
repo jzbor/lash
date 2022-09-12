@@ -1,4 +1,7 @@
-use std::io::*;
+use rustyline::{
+    Editor,
+    error::*,
+};
 use nom::{
     branch::*,
     combinator::*,
@@ -104,24 +107,26 @@ fn parse_line(input: String, state: &mut State) -> bool {
     return false;
 }
 
-fn print_prompt() {
-    print!("\n-> ");
-    stdout().flush().unwrap();
-}
-
-// @TODO test "asdf jkl" on pure parser
-
 fn main() {
     // lambda_info("(((\\x . (\\y . x)) x) ((\\x . (x x)) (\\x . (x x))))");
     let mut state = State::init();
-    let mut input = String::new();
-    print_prompt();
-
-    while stdin().read_line(&mut input).unwrap() != 0 {
-        input = input.trim().to_string();
-        parse_line(input, &mut state);
-        print_prompt();
-        input = String::new();
+    let mut rl = Editor::<()>::new().unwrap();
+    loop {
+        let line = rl.readline("-> ");
+        match line {
+            Ok(input) => {
+                rl.add_history_entry(input.as_str());
+                parse_line(input, &mut state);
+                println!();
+            },
+            Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
+                break
+            },
+            Err(err) => {
+                println!("Error: {:?}", err);
+                break
+            }
+        }
     }
     println!();
 }

@@ -12,6 +12,7 @@ It is not fully tested yet, but you can help with that :).
 * [ ] cli arguments
 * [ ] error handling
 * [ ] printing in default syntax
+* [ ] test pure parser with application like "asdf jkl"
 
 ## Commands
 * `:echo <msg>`: output message to stdout

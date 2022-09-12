@@ -75,7 +75,7 @@ impl Default for HistoryEntry {
 impl HistoryEntry {
     pub fn to_string(&self) -> String {
         match self.parsed {
-            LineType::Lambda(_) => format!("{}\n => {}", self.input, self.output),
+            LineType::Lambda(_) => format!("{}\n    => {}", self.input, self.output),
             LineType::Error(_) => format!("{} [{}]", self.input, self.output),
             _ => format!("{}", self.input),
         }
