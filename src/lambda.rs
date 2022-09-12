@@ -17,7 +17,7 @@ pub enum Parser {
     Default, Pure,
 }
 
-#[derive(Debug,Clone)]
+#[derive(Debug,Clone,PartialEq)]
 pub enum LambdaNode {
     Variable(String), // variable name
     Abstraction(String, Box<LambdaNode>), // variable name, term
@@ -234,7 +234,7 @@ impl LambdaNode {
     }
 
     pub fn substitute(&self, sigma: &HashMap<&str, &LambdaNode>) -> (LambdaNode, u32) {
-        match self {
+        let (a, b) = match self {
             LambdaNode::Variable(name) => apply_substitution(name.as_str(), sigma),
             LambdaNode::Abstraction(var_name, term) => {
                 let rotten = self.free_variables().iter()
@@ -252,7 +252,8 @@ impl LambdaNode {
                 let (right, cright) = right.substitute(sigma);
                 (LambdaNode::Application(Box::new(left), Box::new(right)), cleft + cright)
             }
-        }
+        };
+        return (a, b);
     }
 
     fn to_reduction_lambda_node(&self, mark: bool) -> ReductionLambdaNode {
@@ -341,9 +342,26 @@ impl ReductionLambdaNode {
     }
 }
 
+pub fn assignment_matcher(parser: Parser) -> impl FnMut(&str) -> IResult<&str, (String, String)> {
+    return move |s: &str| {
+        let (rest, name) = map(match_variable_name, |s| s.to_owned())(s)?;
+        let (rest, _) = space1(rest)?;
+        let (rest, _) = char('=')(rest)?;
+        let (rest, _) = space1(rest)?;
+
+        let (rest, term) = recognize(lambda_matcher(parser))(rest)?;
+        return Ok((rest, (name, term.to_owned())));
+    };
+}
+
 fn apply_substitution(var: &str, sigma: &HashMap<&str, &LambdaNode>) -> (LambdaNode, u32) {
     match sigma.get(var) {
-        Some(term) => ((*term).clone(), 1),
+        Some(term)
+            => if LambdaNode::Variable(var.to_string()) == **term {
+                ((*term).clone(), 0)
+            } else {
+                ((*term).clone(), 1)
+            },
         None => (LambdaNode::Variable(var.to_owned()), 0),
     }
 }

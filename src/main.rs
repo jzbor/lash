@@ -20,13 +20,20 @@ mod builtins;
 
 #[derive(Debug,Clone)]
 pub enum LineType {
+    Assignment(String, String),
     Command(Command),
-    Lambda(LambdaNode),
-    Error(String),
     EOF(),
+    Error(String),
+    Lambda(LambdaNode),
     Nop(),
 }
 
+fn handle_assignment(state: &mut State, input: String, name: String, value: String) -> HistoryEntry {
+    state.add_variable(name, value);
+    let mut hist_entry = HistoryEntry::default();
+    hist_entry.input = input;
+    return hist_entry;
+}
 
 fn handle_command(state: &State, input: String, command: Command) -> HistoryEntry {
     let output = command.execute(state);
@@ -38,9 +45,26 @@ fn handle_command(state: &State, input: String, command: Command) -> HistoryEntr
     return hist_entry;
 }
 
+fn replace_builtins_and_variables(state: &State, tree: &LambdaNode) -> (LambdaNode, u32, u32) {
+    let mut variable_substitutions = 0;
+    let variables_borrowed = state.variables.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
+    let mut new_tree = tree.clone();
+    loop {
+        let (t, vs) = new_tree.with_vars(&variables_borrowed, state.config.parser);
+        if vs == 0 {
+            break;
+        }
+        new_tree = t;
+        variable_substitutions += vs;
+    }
+
+    let (new_tree, builtin_substitutions) = new_tree.with_vars(&state.builtins, state.config.parser);
+
+    return (new_tree, builtin_substitutions, variable_substitutions);
+}
+
 fn handle_lambda(state: &State, input: String, tree: LambdaNode) -> HistoryEntry {
-    let variable_substitutions = 0;
-    let (tree, builtin_substitutions) = tree.with_vars(&state.builtins, state.config.parser);
+    let (tree, bsubs, vsubs) = replace_builtins_and_variables(state, &tree);
     let (normal, nbeta) = tree.normalize(ReductionStrategy::Normal);
     println!("{}", normal.to_string());
 
@@ -49,8 +73,8 @@ fn handle_lambda(state: &State, input: String, tree: LambdaNode) -> HistoryEntry
         parsed: LineType::Lambda(tree),
         output: normal.to_string(),
         nbeta: nbeta,
-        var_subs: variable_substitutions,
-        bi_subs: builtin_substitutions,
+        var_subs: vsubs,
+        bi_subs: bsubs,
     };
 }
 
@@ -76,8 +100,10 @@ fn match_eof(s: &str) -> IResult<&str, LineType> {
 fn match_wrapper(config: Config, s: &str) -> IResult<&str, LineType> {
     let to_command = |c| LineType::Command(c);
     let to_lambda = |l| LineType::Lambda(l);
+    let to_assignment = |(k, v)| LineType::Assignment(k, v);
 
-    return alt((map(lambda_matcher(config.parser), to_lambda),
+    return alt((map(assignment_matcher(config.parser), to_assignment),
+                map(lambda_matcher(config.parser), to_lambda),
                 map(match_command, to_command),
                 match_nop, match_eof))(s);
 }
@@ -88,6 +114,7 @@ fn parse_line(input: String, state: &mut State) -> bool {
     let hist_entry = if let Ok((rest, parsed)) = parsed_option {
         if rest == "" {
             match parsed {
+                LineType::Assignment(k, v) => handle_assignment(state, input, k, v),
                 LineType::Command(c) => handle_command(state, input, c),
                 LineType::EOF() => return true,
                 LineType::Error(e) => handle_error(state, input, &e),

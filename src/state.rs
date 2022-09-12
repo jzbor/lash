@@ -24,6 +24,7 @@ pub struct State {
     pub history: Vec<HistoryEntry>,
     pub config: Config,
     pub builtins: HashMap<&'static str, &'static str>,
+    pub variables: HashMap<String, String>,
 }
 
 impl State {
@@ -32,7 +33,12 @@ impl State {
             history: Vec::new(),
             config: Config::default(),
             builtins: get_builtins(),
+            variables: HashMap::new(),
         }
+    }
+
+    pub fn add_variable(&mut self, name: String, value: String) {
+        self.variables.insert(name, value);
     }
 
     pub fn last_lambda(&self) -> Option<&HistoryEntry> {

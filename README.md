@@ -8,6 +8,7 @@ It is not fully tested yet, but you can help with that :).
 
 ## TODOs:
 * [X] `:hist` command
+* [X] variable assignments
 * [ ] `:steps` command
 * [ ] cli arguments
 * [ ] error handling
