@@ -15,6 +15,7 @@ It is not fully tested yet, but you can help with that :).
 * [ ] error handling
 * [ ] test pure parser with application like "asdf jkl"
 * [ ] add license
+* [ ] consume leading/trailing spaces + check for left input in wrapper parser
 
 ## Commands
 * `:echo <msg>`: output message to stdout
@@ -34,7 +35,7 @@ application := group group*
 group       := variable | (lambda)
 ```
 
-### Pure Lambda Syntax
+### Pure Lambda Syntax (currently only available at compile-time)
 ```
 lambda      := variable | abstraction | application
 abstraction := (\variable-name . lambda)

@@ -14,6 +14,7 @@ pub enum Command {
     Echo(String),
     History(),
     Info(),
+    Steps(),
 }
 
 impl Command {
@@ -22,6 +23,7 @@ impl Command {
             Command::Echo(s) => format!(" {} ", s),
             Command::History() => history(state),
             Command::Info() => info(state),
+            Command::Steps() => steps(state),
         }
     }
 }
@@ -43,9 +45,34 @@ pub fn info(state: &State) -> String {
 "input: {}
 output: {}
 beta reductions: {}
-builtin substitutions: {}",
-                           e.input, e.output, e.nbeta, e.bi_subs),
+builtin substitutions: {}
+variable substitutions: {}",
+                           e.input, e.output, e.nbeta, e.bi_subs, e. var_subs),
         None => format!("no history entry found"),
+    }
+}
+
+pub fn steps(state: &State) -> String {
+    if let Some(hist_entry) = state.last_lambda() {
+        if let LineType::Lambda(initial_tree) = &hist_entry.parsed {
+            let mut lines = Vec::new();
+            lines.push(hist_entry.input.clone());
+            let mut tree = initial_tree.clone();
+            loop {
+                let t = tree.reduce(state.config.strategy);
+                lines.push(format!("  -> {}", t.to_string()));
+                if t == tree {
+                    break;
+                } else {
+                    tree = t;
+                }
+            }
+            return lines.join("\n");
+        } else {
+            panic!("last_lambda() didn't return lambda entry");
+        }
+    } else {
+        return String::from("no history entry found");
     }
 }
 
@@ -56,6 +83,7 @@ pub fn match_command(s: &str) -> IResult<&str, Command> {
         match_echo,
         match_hist,
         match_info,
+        match_steps,
     );
     return alt(command_matchers)(rest);
 }
@@ -77,4 +105,10 @@ fn match_info(s: &str) -> IResult<&str, Command> {
     let (rest, _) = tag("info")(s)?;
     let (rest, _) = space0(rest)?;
     return Ok((rest, Command::Info()));
+}
+
+fn match_steps(s: &str) -> IResult<&str, Command> {
+    let (rest, _) = tag("steps")(s)?;
+    let (rest, _) = space0(rest)?;
+    return Ok((rest, Command::Steps()));
 }

@@ -18,16 +18,6 @@ mod commands;
 mod state;
 mod builtins;
 
-#[derive(Debug,Clone)]
-pub enum LineType {
-    Assignment(String, String),
-    Command(Command),
-    EOF(),
-    Error(String),
-    Lambda(LambdaNode),
-    Nop(),
-}
-
 fn handle_assignment(state: &mut State, input: String, name: String, value: String) -> HistoryEntry {
     state.add_variable(name, value);
     let mut hist_entry = HistoryEntry::default();
@@ -139,7 +129,7 @@ fn main() {
     let mut state = State::init();
     let mut rl = Editor::<()>::new().unwrap();
     loop {
-        let line = rl.readline("-> ");
+        let line = rl.readline("><> ");
         match line {
             Ok(input) => {
                 rl.add_history_entry(input.as_str());

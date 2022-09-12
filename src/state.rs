@@ -1,7 +1,17 @@
 use std::collections::HashMap;
-use crate::LineType;
+use crate::commands::*;
 use crate::lambda::*;
 use crate::builtins::*;
+
+#[derive(Debug,Clone)]
+pub enum LineType {
+    Assignment(String, String),
+    Command(Command),
+    EOF(),
+    Error(String),
+    Lambda(LambdaNode),
+    Nop(),
+}
 
 #[derive(Debug,Clone)]
 pub struct HistoryEntry {
