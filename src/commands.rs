@@ -28,6 +28,9 @@ struct StepsCommand;
 #[derive(Clone,Debug,Default)]
 struct StoreCommand { name: String }
 
+#[derive(Clone,Debug,Default)]
+struct VariablesCommand;
+
 
 pub trait Command: Debug {
     fn execute(&self, state: &mut State) -> String;
@@ -179,6 +182,25 @@ impl Command for StoreCommand {
     }
 }
 
+impl Command for VariablesCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> String {
+        state.variables.iter().map(|(k, v)| format!("{} = {}", k, v))
+            .collect::<Vec<String>>().join("\n")
+    }
+
+    fn keyword() -> &'static str {
+        return "variables";
+    }
+
+    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+        return match_no_arguments::<Self>()(s);
+    }
+}
+
 fn match_no_arguments<T>() -> impl FnMut(&str) -> IResult<&str, Box<dyn Command>>
         where T: Command + Default + 'static {
     return |s| {
@@ -198,6 +220,7 @@ pub fn match_command(s: &str) -> IResult<&str, Box<dyn Command>> {
         InfoCommand::match_command,
         StepsCommand::match_command,
         StoreCommand::match_command,
+        VariablesCommand::match_command,
     );
 
     return alt(command_matchers)(rest);
