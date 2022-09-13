@@ -1,5 +1,10 @@
 use std::collections::HashMap;
 
+// Sources:
+// https://www8.cs.fau.de/ext/teaching/sose2022/thprog/skript.pdf
+// https://en.wikipedia.org/wiki/Lambda_calculus
+// https://en.wikipedia.org/wiki/Church_encoding
+
 static BUILTINS: &'static [(&str, &str)] = &[
     // standard terms
     ("ID",      "\\x . x"),
@@ -20,6 +25,12 @@ static BUILTINS: &'static [(&str, &str)] = &[
     ("PAIR",    "\\ x y . \\ z. z x y"),
     ("FIRST",   "\\ p . p TRUE"),
     ("SECOND",  "\\ p . p FALSE"),
+    // lists (using right fold)
+    ("NIL",     "\\c n . n"),
+    ("ISNIL",   "\\l . l (\\h t . FALSE) TRUE"),
+    ("CONS",    "\\h t c n . c h (t c n)"),
+    ("HEAD",    "\\l . l (\\h t. h) FALSE"),
+    ("TAIL",    "\\l c n . l (\\h t g . g h (t c)) (\\t . n) (\\h t . t)"),
 ];
 
 pub fn get_builtins() -> HashMap<&'static str, &'static str> {
