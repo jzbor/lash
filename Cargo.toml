@@ -5,11 +5,10 @@ edition = "2021"
 description = "Interactive shell for lambda expressions"
 readme = "README.md"
 repository = "https://github.com/jzbor/lash"
-asdfasd = ""
 license = "MIT"
-license-file = "LICENSE"
 
 
 [dependencies]
 rustyline = "10.0.0"
 nom = "7"
+nom_locate = "4.0.0"

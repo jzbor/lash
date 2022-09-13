@@ -6,11 +6,11 @@ use nom::{
     combinator::*,
     sequence::*,
     combinator,
-    IResult
 };
 
 use crate::state::*;
 use crate::lambda::*;
+use crate::parsing::*;
 
 
 #[derive(Clone,Debug,Default)]
@@ -39,14 +39,15 @@ pub trait Command: Debug {
     fn execute(&self, state: &mut State) -> String;
     fn clone_to_box(&self) -> Box<dyn Command>;
     fn keyword() -> &'static str where Self: Sized;
-    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> where Self: Sized;
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> where Self: Sized;
 
-    fn match_keyword(s: &str) -> IResult<&str, ()> where Self: Sized{
+    fn match_keyword(s: Span) -> IResult<()> where Self: Sized{
         return map(tag(Self::keyword()), |_| ())(s);
     }
 
-    fn match_command(s: &str) -> IResult<&str, Box<dyn Command>> where Self: Sized {
-        let (rest, _) = tag(Self::keyword())(s)?;
+    fn match_command(s: Span) -> IResult<Box<dyn Command>> where Self: Sized {
+        let (rest, _) = with_err(tag(Self::keyword())(s), s,
+                                 format!("unknown command '{}'", s))?;
         let (rest, _) = alt((recognize(space1), recognize(pair(space0,eof))))(rest)?;
         return Self::match_arguments(rest);
     }
@@ -67,7 +68,7 @@ impl Command for BuiltinsCommand {
         return "builtins";
     }
 
-    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         return match_no_arguments::<Self>()(s);
     }
 }
@@ -81,9 +82,9 @@ impl Command for EchoCommand {
         return format!(" {} ", self.msg);
     }
 
-    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         let (rest, output) = combinator::rest(s)?;
-        return Ok((rest, Box::new(EchoCommand { msg: output.to_owned() })));
+        return Ok((rest, Box::new(EchoCommand { msg: (*output).to_owned() })));
     }
 
     fn keyword() -> &'static str {
@@ -110,7 +111,7 @@ impl Command for HistoryCommand {
         return "hist";
     }
 
-    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         return match_no_arguments::<Self>()(s);
     }
 }
@@ -136,7 +137,7 @@ variable substitutions: {}",
         return "info";
     }
 
-    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         return match_no_arguments::<Self>()(s);
     }
 }
@@ -175,7 +176,7 @@ impl Command for StepsCommand {
         return "steps";
     }
 
-    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         return match_no_arguments::<Self>()(s);
     }
 }
@@ -194,7 +195,7 @@ impl Command for StoreCommand {
         }
     }
 
-    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         let (rest, name) = match_variable_name(s)?;
         return Ok((rest, Box::new(StoreCommand { name: name.to_owned() })));
     }
@@ -218,21 +219,22 @@ impl Command for VariablesCommand {
         return "variables";
     }
 
-    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         return match_no_arguments::<Self>()(s);
     }
 }
 
-fn match_no_arguments<T>() -> impl FnMut(&str) -> IResult<&str, Box<dyn Command>>
-        where T: Command + Default + 'static {
+fn match_no_arguments<T>() -> impl FnMut(Span) -> IResult<Box<dyn Command>>
+        where T: Clone + Command + Default + 'static {
     return |s| {
-        let (rest, _) = eof(s)?;
-        Ok((rest, Box::new(T::default())))
+        let default: Box<dyn Command> = Box::new(T::default());
+        Ok((s, default))
+            .conclude(|_| format!("command '{}' does not take any arguments", T::keyword()))
     };
 }
 
 
-pub fn match_command(s: &str) -> IResult<&str, Box<dyn Command>> {
+pub fn match_command(s: Span) -> IResult<Box<dyn Command>> {
     let (rest, _) = char(':')(s)?;
     let (rest, _) = space0(rest)?;
 

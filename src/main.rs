@@ -6,17 +6,18 @@ use nom::{
     branch::*,
     combinator::*,
     character::complete::*,
-    IResult,
 };
 
 use lambda::*;
 use commands::*;
 use state::*;
+use parsing::*;
 
 mod lambda;
 mod commands;
 mod state;
 mod builtins;
+mod parsing;
 
 fn handle_assignment(state: &mut State, input: String, name: String, value: String) -> HistoryEntry {
     state.add_variable(name, value);
@@ -68,8 +69,8 @@ fn handle_lambda(state: &State, input: String, tree: LambdaNode) -> HistoryEntry
     };
 }
 
-fn handle_error(_state: &State, input: String, msg: &str) -> HistoryEntry {
-    let output = format!("An error occured: {}", msg);
+fn on_parsing_error(_state: &State, input: String, msg: &str) -> HistoryEntry {
+    let output = format!("Parsing Error: {}", msg);
     println!("{}", output);
     let mut hist_entry = HistoryEntry::default();
     hist_entry.input = input;
@@ -78,46 +79,48 @@ fn handle_error(_state: &State, input: String, msg: &str) -> HistoryEntry {
     return hist_entry;
 }
 
-fn match_nop(s: &str) -> IResult<&str, LineType> {
-    return space0(s).map(|(rest, _)| (rest, LineType::Nop()));
+fn match_nop(s: Span) -> IResult<LineType> {
+    return space0(s).map(|(rest, _)| (rest, LineType::Nop()))
+        .conclude(|_| "".to_owned());
 }
 
-fn match_eof(s: &str) -> IResult<&str, LineType> {
+fn match_eof(s: Span) -> IResult<LineType> {
     return eof(s).map(|(rest, _)| (rest, LineType::EOF()));
 }
 
 
-fn match_wrapper(config: Config, s: &str) -> IResult<&str, LineType> {
+fn match_wrapper(config: Config, s: &str) -> Result<LineType, String> {
     let to_command = |c| LineType::Command(c);
     let to_lambda = |l| LineType::Lambda(l);
     let to_assignment = |(k, v)| LineType::Assignment(k, v);
+    let (s, _) = space0::<&str, ()>(s).unwrap();
 
-    return alt((map(assignment_matcher(config.parser), to_assignment),
+    match alt((map(assignment_matcher(config.parser), to_assignment),
                 map(lambda_matcher(config.parser), to_lambda),
                 map(match_command, to_command),
-                match_nop, match_eof))(s);
+                match_nop, match_eof))(Span::new(s)) {
+        Ok((rest, parsed)) => Ok(parsed),
+        Err(err) => match err {
+            nom::Err::Incomplete(needed) => Err("parsing incomplete".to_owned()),
+            nom::Err::Error(e) => Err(e.message()),
+            nom::Err::Failure(e) => Err(e.message()),
+        },
+    }
 }
 
 fn parse_line(input: String, state: &mut State) -> bool {
-    let parsed_option = match_wrapper(state.config, &input);
+    let parser_result = match_wrapper(state.config, &input);
 
-    let hist_entry = if let Ok((rest, parsed)) = parsed_option {
-        if rest == "" {
-            match parsed {
-                LineType::Assignment(k, v) => handle_assignment(state, input, k, v),
-                LineType::Command(c) => handle_command(state, input, c),
-                LineType::EOF() => return true,
-                LineType::Error(e) => handle_error(state, input, &e),
-                LineType::Lambda(t) => handle_lambda(state, input, t),
-                LineType::Nop() => return false,
-            }
-        } else {
-            let msg = "Unable to parse (unparsed input remaining)";
-            handle_error(state, input, msg)
-        }
-    } else {
-        let msg = "Unable to parse (parser returned error)";
-        handle_error(state, input, msg)
+    let hist_entry = match parser_result {
+        Ok(parsed) => match parsed {
+            LineType::Assignment(k, v) => handle_assignment(state, input, k, v),
+            LineType::Command(c) => handle_command(state, input, c),
+            LineType::EOF() => return true,
+            LineType::Error(e) => on_parsing_error(state, input, &e),
+            LineType::Lambda(t) => handle_lambda(state, input, t),
+            LineType::Nop() => return false,
+        },
+        Err(msg) => on_parsing_error(state, input, &msg),
     };
 
     state.history.push(hist_entry);

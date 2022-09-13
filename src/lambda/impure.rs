@@ -3,23 +3,27 @@ use nom::{
     branch::*,
     multi::*,
     character::complete::*,
-    IResult,
 };
 
 use crate::lambda::*;
+use crate::parsing::*;
 
-pub fn match_lambda(s: &str) -> IResult<&str, LambdaNode> {
+pub fn match_lambda(s: Span) -> IResult<LambdaNode> {
     return alt((match_abstraction, match_application))(s);
 }
 
-fn match_abstraction(s: &str) -> IResult<&str, LambdaNode> {
+fn match_abstraction(s: Span) -> IResult<LambdaNode> {
     let (rest, _) = match_lambda_sign(s)?;
     let (rest, _) = space0(rest)?;
     let (rest, mut variables) = map(match_variable_list, |v| VecDeque::from(v))(rest)?;
     let (rest, _) = space0(rest)?;
     let (rest, _) = char('.')(rest)?;
-    let (rest, _) = space0(rest)?;
-    let (rest, inner) = match_lambda(rest)?;
+    let match_inner = |s| {
+        let (rest, _) = space0(rest)?;
+        return match_lambda(rest);
+    };
+    let (rest, inner) = with_err(match_inner(rest), rest,
+                             "missing inner term on abstraction".to_owned())?;
 
     let mut current_abstraction = LambdaNode::Abstraction(variables.pop_back().unwrap()
                                                           .to_owned(), Box::new(inner));
@@ -42,17 +46,17 @@ fn vec_to_application(mut terms: Vec<LambdaNode>) -> LambdaNode {
     }
 }
 
-fn match_application(s: &str) -> IResult<&str, LambdaNode> {
+fn match_application(s: Span) -> IResult<LambdaNode> {
     let (rest, terms) = separated_list1(space1, match_group)(s)?;
     let node = vec_to_application(terms);
     return Ok((rest, node));
 }
 
-fn match_group(s: &str) -> IResult<&str, LambdaNode> {
+fn match_group(s: Span) -> IResult<LambdaNode> {
     return alt((match_variable, match_bracketed))(s);
 }
 
-fn match_bracketed(s: &str) -> IResult<&str, LambdaNode> {
+fn match_bracketed(s: Span) -> IResult<LambdaNode> {
     let (rest, _) = char('(')(s)?;
     let (rest, _) = space0(rest)?;
     let (rest, lambda) = match_lambda(rest)?;
@@ -62,12 +66,12 @@ fn match_bracketed(s: &str) -> IResult<&str, LambdaNode> {
     return Ok((rest, lambda));
 }
 
-fn match_variable(s: &str) -> IResult<&str, LambdaNode> {
+fn match_variable(s: Span) -> IResult<LambdaNode> {
     let (rest, name) = match_variable_name(s)?;
     return Ok((rest, LambdaNode::Variable(name.to_owned())));
 }
 
-fn match_variable_list(s: &str) -> IResult<&str, Vec<&str>> {
+fn match_variable_list<'a>(s: Span<'a>) -> IResult<Vec<&'a str>> {
     let mut rest = s;
     let mut variables = Vec::new();
 
@@ -76,7 +80,8 @@ fn match_variable_list(s: &str) -> IResult<&str, Vec<&str>> {
         rest = r
     } else {
         // @TODO
-        panic!("Error handling for missing variables not implemented");
+        return Err(nom::Err::Error(
+                ParseError::new("variables missing for lambda abstraction".to_owned(), rest)));
     }
 
     loop {

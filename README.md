@@ -15,9 +15,8 @@ It is not fully tested yet, but you can help with that :).
 * [X] `:variables` command
 * [X] `:builtins` command
 * [X] add license
+* [X] error handling
 * [ ] cli arguments
-* [ ] error handling
-* [ ] consume leading/trailing spaces + check for left input in wrapper parser
 * [ ] limit history size
 * [ ] handle files/scripts
 

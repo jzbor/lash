@@ -5,8 +5,9 @@ use nom::{
     character::complete::*,
     combinator::*,
     character::*,
-    IResult,
 };
+
+use crate::parsing::*;
 
 mod pure;
 mod impure;
@@ -302,7 +303,7 @@ impl LambdaNode {
             -> (LambdaNode, u32) {
         let mut owned = HashMap::new();
         for (k, v) in var_map {
-            let tree = lambda_matcher(parser)(v).unwrap().1;
+            let tree = lambda_matcher(parser)(Span::new(v)).unwrap().1;
             owned.insert(*k, tree);
         }
         let sigma = owned.iter().map(|(k, v)| (*k, v)).collect();
@@ -357,15 +358,20 @@ impl ReductionLambdaNode {
     }
 }
 
-pub fn assignment_matcher(parser: Parser) -> impl FnMut(&str) -> IResult<&str, (String, String)> {
-    return move |s: &str| {
+pub fn assignment_matcher(parser: Parser) -> impl FnMut(Span) -> IResult<(String, String)> {
+    return move |s: Span| {
         let (rest, name) = map(match_variable_name, |s| s.to_owned())(s)?;
         let (rest, _) = space1(rest)?;
         let (rest, _) = char('=')(rest)?;
-        let (rest, _) = space1(rest)?;
 
-        let (rest, term) = recognize(lambda_matcher(parser))(rest)?;
-        return Ok((rest, (name, term.to_owned())));
+        let match_right_hand_side = |s| {
+            let (rest, _) = space1(rest)?;
+            return recognize(lambda_matcher(parser))(rest);
+        };
+        let (rest, term) = with_err(match_right_hand_side(rest), rest,
+                                "missing right hand side on assignment".to_owned())?;
+
+        return Ok((rest, (name, (*term).to_owned())));
     };
 }
 
@@ -391,27 +397,31 @@ fn fresh_var(old_var: &str, rotten: HashSet<String>) -> String {
     return new_var;
 }
 
-pub fn lambda_matcher(parser: Parser) -> impl FnMut(&str) -> IResult<&str, LambdaNode> {
-    match parser {
-        Parser::Default => match_lambda_default,
-        Parser::Pure => match_lambda_pure,
+pub fn lambda_matcher(parser: Parser) -> impl FnMut(Span) -> IResult<LambdaNode> {
+    return move |s| {
+        let match_lambda = match parser {
+            Parser::Default => match_lambda_default,
+            Parser::Pure => match_lambda_pure,
+        };
+        return match_lambda(s)
+                .conclude(|r| format!("unable to parse lambda expression ('{}')", r));
     }
 }
 
-pub fn match_lambda_default(s: &str) -> IResult<&str, LambdaNode> {
+pub fn match_lambda_default(s: Span) -> IResult<LambdaNode> {
     impure::match_lambda(s)
 }
 
-pub fn match_lambda_pure(s: &str) -> IResult<&str, LambdaNode> {
+pub fn match_lambda_pure(s: Span) -> IResult<LambdaNode> {
     pure::match_lambda(s)
 }
 
 
-fn match_lambda_sign(s: &str) -> IResult<&str, &str> {
+fn match_lambda_sign(s: Span) -> IResult<Span> {
     return recognize(char('\\'))(s);
 }
 
-pub fn match_variable_name(s: &str) -> IResult<&str, &str> {
+pub fn match_variable_name<'a>(s: Span<'a>) -> IResult<&'a str> {
     let (rest, name) = take_while1(|x| is_alphanumeric(x as u8) || x == '-' || x == '_')(s)?;
-    return Ok((rest, name));
+    return Ok((rest, *name));
 }

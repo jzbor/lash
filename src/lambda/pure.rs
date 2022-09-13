@@ -1,10 +1,10 @@
 use nom::{
     branch::*,
     character::complete::*,
-    IResult,
 };
 
 use crate::lambda::*;
+use crate::parsing::*;
 
 // @TODO this parser does not seem to handle applications well (try "(asdf jkl)")
 //
@@ -13,16 +13,16 @@ use crate::lambda::*;
 // abstraction := (\variable-name . lambda)
 // application := (lambda lambda)
 
-pub fn match_lambda(s: &str) -> IResult<&str, LambdaNode> {
+pub fn match_lambda(s: Span) -> IResult<LambdaNode> {
     return alt((match_variable, match_abstraction, match_application))(s);
 }
 
-fn match_variable(s: &str) -> IResult<&str, LambdaNode> {
+fn match_variable(s: Span) -> IResult<LambdaNode> {
     let (rest, name) = match_variable_name(s)?;
     return Ok((rest, LambdaNode::Variable(name.to_owned())));
 }
 
-fn match_abstraction(s :&str) -> IResult<&str, LambdaNode> {
+fn match_abstraction(s: Span) -> IResult<LambdaNode> {
     let (rest, _) = char('(')(s)?;
     let (rest, _) = space0(rest)?;
     let (rest, _) = match_lambda_sign(rest)?;
@@ -37,7 +37,7 @@ fn match_abstraction(s :&str) -> IResult<&str, LambdaNode> {
     return Ok((rest, LambdaNode::Abstraction(variable_name.to_owned(), Box::new(term))));
 }
 
-fn match_application(s :&str) -> IResult<&str, LambdaNode> {
+fn match_application(s: Span) -> IResult<LambdaNode> {
     let (rest, _) = char('(')(s)?;
     let (rest, _) = space0(rest)?;
     let (rest, term1) = match_lambda(rest)?;
