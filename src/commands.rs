@@ -216,7 +216,7 @@ impl Command for VariablesCommand {
     }
 
     fn keyword() -> &'static str {
-        return "variables";
+        return "vars";
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {

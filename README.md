@@ -6,23 +6,14 @@ Some parts of it are wildly inefficient, but it is fine for education purposes.
 The shell can evaluate lambda expressions or execute [commands](#commands).
 It is not fully tested yet, but you can help with that :).
 
-## TODOs:
-* [X] `:hist` command
-* [X] variable assignments
-* [X] printing in default syntax
-* [X] `:steps` command
-* [X] `:store` command
-* [X] `:variables` command
-* [X] `:builtins` command
-* [X] add license
-* [X] error handling
-* [X] cli arguments
-* [X] handle files/scripts
-* [ ] limit history size
-
 ## Commands
+* `:builtins` list builtin terms
 * `:echo <msg>`: output message to stdout
+* `:hist` show history
 * `:info`: get useful information on the last evaluated lambda expression
+* `:steps` print reduction steps of last term
+* `:store <name>` store last term into a variable
+* `:vars` list variables
 
 ## Syntax
 ```
