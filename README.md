@@ -12,8 +12,8 @@ It is not fully tested yet, but you can help with that :).
 * [X] printing in default syntax
 * [X] `:steps` command
 * [X] `:store` command
-* [ ] `:variables` command
-* [ ] `:builtins` command
+* [X] `:variables` command
+* [X] `:builtins` command
 * [ ] cli arguments
 * [ ] error handling
 * [ ] add license

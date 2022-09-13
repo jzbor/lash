@@ -14,6 +14,9 @@ use crate::lambda::*;
 
 
 #[derive(Clone,Debug,Default)]
+struct BuiltinsCommand;
+
+#[derive(Clone,Debug,Default)]
 struct EchoCommand { msg: String }
 
 #[derive(Clone,Debug,Default)]
@@ -49,6 +52,25 @@ pub trait Command: Debug {
     }
 }
 
+
+impl Command for BuiltinsCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> String {
+        state.builtins.iter().map(|(k, v)| format!("{} = {}", k, v))
+            .collect::<Vec<String>>().join("\n")
+    }
+
+    fn keyword() -> &'static str {
+        return "builtins";
+    }
+
+    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+        return match_no_arguments::<Self>()(s);
+    }
+}
 
 impl Command for EchoCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
@@ -215,6 +237,7 @@ pub fn match_command(s: &str) -> IResult<&str, Box<dyn Command>> {
     let (rest, _) = space0(rest)?;
 
     let command_matchers = (
+        BuiltinsCommand::match_command,
         EchoCommand::match_command,
         HistoryCommand::match_command,
         InfoCommand::match_command,
