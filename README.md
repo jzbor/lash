@@ -19,6 +19,8 @@ It is not fully tested yet, but you can help with that :).
 ```
 line        := command | lambda
 command     := :keyword args
+assignment  := variable-name = lambda
+variable    := [a-zA-Z0-9_'-]*
 ```
 
 ### Lambda Syntax

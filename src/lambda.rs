@@ -392,8 +392,14 @@ fn apply_substitution(var: &str, sigma: &HashMap<&str, &LambdaNode>) -> (LambdaN
 fn fresh_var(old_var: &str, rotten: HashSet<String>) -> String {
     let mut new_var = old_var.to_owned();
     let mut i = 1;
+
+    while rotten.contains(&new_var) && i <= 3 {
+        new_var = format!("{}{}", new_var, '\'');
+        i += 1;
+    }
+
     while rotten.contains(&new_var) {
-        new_var = format!("{}{}", new_var, i);
+        new_var = format!("{}{}'", old_var, i);
         i += 1;
     }
     return new_var;
@@ -424,6 +430,6 @@ fn match_lambda_sign(s: Span) -> IResult<Span> {
 }
 
 pub fn match_variable_name<'a>(s: Span<'a>) -> IResult<&'a str> {
-    let (rest, name) = take_while1(|x| is_alphanumeric(x as u8) || x == '-' || x == '_')(s)?;
+    let (rest, name) = take_while1(|x| is_alphanumeric(x as u8) || x == '-' || x == '_' || x == '\'')(s)?;
     return Ok((rest, *name));
 }
