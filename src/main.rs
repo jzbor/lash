@@ -23,10 +23,17 @@ mod builtins;
 mod parsing;
 
 fn handle_assignment(state: &mut State, input: String, name: String, value: String) -> HistoryEntry {
-    state.add_variable(name.clone(), value.clone());
     let mut hist_entry = HistoryEntry::default();
     hist_entry.input = input;
-    hist_entry.parsed = LineType::Assignment(name, value);
+    match state.add_variable(name.clone(), value.clone()) {
+        Ok(_) => hist_entry.parsed = LineType::Assignment(name, value),
+        Err(_) => {
+            let msg = "Error: overwriting builtins is not allowed";
+            println!("{}", msg);
+            hist_entry.parsed = LineType::Error(msg.to_owned());
+            hist_entry.output = msg.to_owned();
+        },
+    };
     return hist_entry;
 }
 
@@ -41,26 +48,30 @@ fn handle_command(state: &mut State, input: String, command: Box<dyn Command>) -
 }
 
 fn replace_builtins_and_variables(state: &State, tree: &LambdaNode) -> (LambdaNode, u32, u32) {
-    let mut variable_substitutions = 0;
+    let mut var_subs = 0;
     let variables_borrowed = state.variables.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
     let mut new_tree = tree.clone();
     loop {
         let (t, vs) = new_tree.with_vars(&variables_borrowed, state.config.parser);
-        if vs == 0 {
-            break;
-        }
+        if vs == 0 { break; }
         new_tree = t;
-        variable_substitutions += vs;
+        var_subs += vs;
     }
 
-    let (new_tree, builtin_substitutions) = new_tree.with_vars(&state.builtins, state.config.parser);
+    let mut bi_subs = 0;
+    loop {
+        let (t, bs) = new_tree.with_vars(&state.builtins, state.config.parser);
+        if bs == 0 { break; }
+        new_tree = t;
+        bi_subs += bs;
+    }
 
-    return (new_tree, builtin_substitutions, variable_substitutions);
+    return (new_tree, bi_subs, var_subs);
 }
 
 fn handle_lambda(state: &State, input: String, tree: LambdaNode) -> HistoryEntry {
     let (tree, bsubs, vsubs) = replace_builtins_and_variables(state, &tree);
-    let (normal, nbeta) = tree.normalize(ReductionStrategy::Normal);
+    let (normal, nbeta) = tree.normalize(state.config.strategy);
     println!("{}", normal.to_string());
 
     return HistoryEntry {

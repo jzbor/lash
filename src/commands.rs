@@ -26,6 +26,9 @@ struct HistoryCommand;
 struct InfoCommand;
 
 #[derive(Clone,Debug,Default)]
+struct PrintCommand { var: String }
+
+#[derive(Clone,Debug,Default)]
 struct StepsCommand;
 
 #[derive(Clone,Debug,Default)]
@@ -142,6 +145,34 @@ variable substitutions: {}",
     }
 }
 
+impl Command for PrintCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> String {
+        match state.builtins.get(self.var.as_str()) {
+            Some(term) => term.to_string(),
+            None => match state.variables.get(&self.var) {
+                Some(term) => term.clone(),
+                None => format!("Variable '{}' not found", self.var),
+            },
+        }
+    }
+
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
+        let msg = "print takes exactly one argument";
+        let (rest, var) = with_err(match_variable_name(s), s, msg.to_owned())?;
+        let (rest, _) = with_err(space0(rest), rest, msg.to_owned())?;
+        let (rest, _) = with_err(eof(rest), rest, msg.to_owned())?;
+        return Ok((rest, Box::new(PrintCommand { var: (*var).to_owned() })));
+    }
+
+    fn keyword() -> &'static str {
+        return "print";
+    }
+}
+
 impl Command for StepsCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
         return Box::new(self.clone());
@@ -243,6 +274,7 @@ pub fn match_command(s: Span) -> IResult<Box<dyn Command>> {
         EchoCommand::match_command,
         HistoryCommand::match_command,
         InfoCommand::match_command,
+        PrintCommand::match_command,
         StepsCommand::match_command,
         StoreCommand::match_command,
         VariablesCommand::match_command,

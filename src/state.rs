@@ -65,8 +65,13 @@ impl State {
         }
     }
 
-    pub fn add_variable(&mut self, name: String, value: String) {
-        self.variables.insert(name, value);
+    pub fn add_variable(&mut self, name: String, value: String) -> Result<(), ()> {
+        if self.builtins.contains_key(name.as_str()) {
+            return Err(());
+        } else {
+            self.variables.insert(name, value);
+            return Ok(());
+        }
     }
 
     pub fn last_lambda(&self) -> Option<&HistoryEntry> {

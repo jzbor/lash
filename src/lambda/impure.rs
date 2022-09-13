@@ -16,7 +16,8 @@ fn match_abstraction(s: Span) -> IResult<LambdaNode> {
     let (rest, _) = space0(rest)?;
     let (rest, mut variables) = map(match_variable_list, |v| VecDeque::from(v))(rest)?;
     let (rest, _) = space0(rest)?;
-    let (rest, _) = char('.')(rest)?;
+    let (rest, _) = with_err(char('.')(rest), rest,
+                             "expected '.' after abstraction variables".to_owned())?;
     let match_inner = |s| {
         let (rest, _) = space0(s)?;
         return match_lambda(rest);

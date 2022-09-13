@@ -6,11 +6,18 @@ Some parts of it are wildly inefficient, but it is fine for education purposes.
 The shell can evaluate lambda expressions or execute [commands](#commands).
 It is not fully tested yet, but you can help with that :).
 
+## Features
+* normal (leftmost-outermost) and applicative (leftmost-innermost) evaluation strategies
+* capture-avoiding substitution
+* simple constructs provided via builtins
+* commands giving more information on reduction and normalization
+
 ## Commands
 * `:builtins` list builtin terms
 * `:echo <msg>`: output message to stdout
 * `:hist` show history
 * `:info`: get useful information on the last evaluated lambda expression
+* `:print`: print assigned value for variable or builtin
 * `:steps` print reduction steps of last term
 * `:store <name>` store last term into a variable
 * `:vars` list variables
