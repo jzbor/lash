@@ -411,7 +411,7 @@ fn match_lambda_sign(s: &str) -> IResult<&str, &str> {
     return recognize(char('\\'))(s);
 }
 
-fn match_variable_name(s: &str) -> IResult<&str, &str> {
+pub fn match_variable_name(s: &str) -> IResult<&str, &str> {
     let (rest, name) = take_while1(|x| is_alphanumeric(x as u8) || x == '-' || x == '_')(s)?;
     return Ok((rest, name));
 }

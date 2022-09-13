@@ -11,9 +11,9 @@ It is not fully tested yet, but you can help with that :).
 * [X] variable assignments
 * [X] printing in default syntax
 * [X] `:steps` command
+* [X] `:store` command
 * [ ] `:variables` command
 * [ ] `:builtins` command
-* [ ] `:store` command
 * [ ] cli arguments
 * [ ] error handling
 * [ ] add license

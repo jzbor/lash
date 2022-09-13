@@ -10,6 +10,7 @@ use nom::{
 };
 
 use crate::state::*;
+use crate::lambda::*;
 
 
 #[derive(Clone,Debug,Default)]
@@ -23,6 +24,9 @@ struct InfoCommand;
 
 #[derive(Clone,Debug,Default)]
 struct StepsCommand;
+
+#[derive(Clone,Debug,Default)]
+struct StoreCommand { name: String }
 
 
 pub trait Command: Debug {
@@ -151,6 +155,30 @@ impl Command for StepsCommand {
     }
 }
 
+impl Command for StoreCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> String {
+        if let Some(hist_entry) = state.last_lambda() {
+            state.add_variable(self.name.clone(), hist_entry.input.clone());
+            return format!("Added variable mapping for '{}'", self.name);
+        } else {
+            return String::from("no history entry found");
+        }
+    }
+
+    fn match_arguments(s: &str) -> IResult<&str, Box<dyn Command>> {
+        let (rest, name) = match_variable_name(s)?;
+        return Ok((rest, Box::new(StoreCommand { name: name.to_owned() })));
+    }
+
+    fn keyword() -> &'static str {
+        return "store";
+    }
+}
+
 fn match_no_arguments<T>() -> impl FnMut(&str) -> IResult<&str, Box<dyn Command>>
         where T: Command + Default + 'static {
     return |s| {
@@ -169,6 +197,7 @@ pub fn match_command(s: &str) -> IResult<&str, Box<dyn Command>> {
         HistoryCommand::match_command,
         InfoCommand::match_command,
         StepsCommand::match_command,
+        StoreCommand::match_command,
     );
 
     return alt(command_matchers)(rest);
