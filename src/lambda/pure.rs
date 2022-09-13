@@ -6,6 +6,13 @@ use nom::{
 
 use crate::lambda::*;
 
+// @TODO this parser does not seem to handle applications well (try "(asdf jkl)")
+//
+// Syntax:
+// lambda      := variable | abstraction | application
+// abstraction := (\variable-name . lambda)
+// application := (lambda lambda)
+
 pub fn match_lambda(s: &str) -> IResult<&str, LambdaNode> {
     return alt((match_variable, match_abstraction, match_application))(s);
 }

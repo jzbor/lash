@@ -14,13 +14,12 @@ It is not fully tested yet, but you can help with that :).
 * [X] `:store` command
 * [X] `:variables` command
 * [X] `:builtins` command
+* [X] add license
 * [ ] cli arguments
 * [ ] error handling
-* [ ] add license
 * [ ] consume leading/trailing spaces + check for left input in wrapper parser
 * [ ] limit history size
 * [ ] handle files/scripts
-* [ ] pure parser can't handle applications properly
 
 ## Commands
 * `:echo <msg>`: output message to stdout
@@ -32,18 +31,11 @@ line        := command | lambda
 command     := :keyword args
 ```
 
-### Default Lambda Syntax
+### Lambda Syntax
 ```
 lambda      := abstraction | application
 abstraction := \variable-list . lambda
 application := group group*
 group       := variable | (lambda)
-```
-
-### Pure Lambda Syntax (currently broken and not available)
-```
-lambda      := variable | abstraction | application
-abstraction := (\variable-name . lambda)
-application := (lambda lambda)
 ```
 
