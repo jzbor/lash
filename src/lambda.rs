@@ -13,8 +13,9 @@ mod pure;
 mod impure;
 
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Copy,Clone,Default)]
 pub enum Parser {
+    #[default]
     Default, Pure,
 }
 
@@ -32,8 +33,9 @@ pub enum ReductionLambdaNode {
     Application(bool, Box<ReductionLambdaNode>, Box<ReductionLambdaNode>),
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Copy,Clone,Default,clap::ArgEnum)]
 pub enum ReductionStrategy {
+    #[default]
     Normal, Applicative,
 }
 
@@ -365,7 +367,7 @@ pub fn assignment_matcher(parser: Parser) -> impl FnMut(Span) -> IResult<(String
         let (rest, _) = char('=')(rest)?;
 
         let match_right_hand_side = |s| {
-            let (rest, _) = space1(rest)?;
+            let (rest, _) = space1(s)?;
             return recognize(lambda_matcher(parser))(rest);
         };
         let (rest, term) = with_err(match_right_hand_side(rest), rest,

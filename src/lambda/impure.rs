@@ -6,7 +6,6 @@ use nom::{
 };
 
 use crate::lambda::*;
-use crate::parsing::*;
 
 pub fn match_lambda(s: Span) -> IResult<LambdaNode> {
     return alt((match_abstraction, match_application))(s);
@@ -19,7 +18,7 @@ fn match_abstraction(s: Span) -> IResult<LambdaNode> {
     let (rest, _) = space0(rest)?;
     let (rest, _) = char('.')(rest)?;
     let match_inner = |s| {
-        let (rest, _) = space0(rest)?;
+        let (rest, _) = space0(s)?;
         return match_lambda(rest);
     };
     let (rest, inner) = with_err(match_inner(rest), rest,

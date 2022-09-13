@@ -36,11 +36,16 @@ pub struct HistoryEntry {
     pub bi_subs: u32,
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Clone,clap::Parser)]
 pub struct Config {
+    #[clap(skip)]
     pub parser: Parser,
+
+    #[clap(short, long, arg_enum, value_parser, default_value_t)]
     pub strategy: ReductionStrategy,
-    pub interactive: bool,
+
+    #[clap(short, long, value_parser)]
+    pub file: Option<String>,
 }
 
 pub struct State {
@@ -51,10 +56,10 @@ pub struct State {
 }
 
 impl State {
-    pub fn init() -> State {
+    pub fn init(config: Config) -> State {
         return State {
             history: Vec::new(),
-            config: Config::default(),
+            config: config,
             builtins: get_builtins(),
             variables: HashMap::new(),
         }
@@ -83,7 +88,7 @@ impl Default for Config {
         return Config {
             parser: Parser::Default,
             strategy: ReductionStrategy::Normal,
-            interactive: true,
+            file: None,
         };
     }
 }

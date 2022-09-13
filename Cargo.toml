@@ -12,3 +12,4 @@ license = "MIT"
 rustyline = "10.0.0"
 nom = "7"
 nom_locate = "4.0.0"
+clap = { version = "3.2.21", features = ["derive"] }

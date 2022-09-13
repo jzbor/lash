@@ -16,9 +16,9 @@ It is not fully tested yet, but you can help with that :).
 * [X] `:builtins` command
 * [X] add license
 * [X] error handling
-* [ ] cli arguments
+* [X] cli arguments
+* [X] handle files/scripts
 * [ ] limit history size
-* [ ] handle files/scripts
 
 ## Commands
 * `:echo <msg>`: output message to stdout

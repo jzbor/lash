@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use rustyline::{
     Editor,
     error::*,
@@ -12,6 +14,7 @@ use lambda::*;
 use commands::*;
 use state::*;
 use parsing::*;
+use clap::Parser;
 
 mod lambda;
 mod commands;
@@ -20,9 +23,10 @@ mod builtins;
 mod parsing;
 
 fn handle_assignment(state: &mut State, input: String, name: String, value: String) -> HistoryEntry {
-    state.add_variable(name, value);
+    state.add_variable(name.clone(), value.clone());
     let mut hist_entry = HistoryEntry::default();
     hist_entry.input = input;
+    hist_entry.parsed = LineType::Assignment(name, value);
     return hist_entry;
 }
 
@@ -89,7 +93,7 @@ fn match_eof(s: Span) -> IResult<LineType> {
 }
 
 
-fn match_wrapper(config: Config, s: &str) -> Result<LineType, String> {
+fn match_wrapper(config: &Config, s: &str) -> Result<LineType, String> {
     let to_command = |c| LineType::Command(c);
     let to_lambda = |l| LineType::Lambda(l);
     let to_assignment = |(k, v)| LineType::Assignment(k, v);
@@ -99,54 +103,108 @@ fn match_wrapper(config: Config, s: &str) -> Result<LineType, String> {
                 map(lambda_matcher(config.parser), to_lambda),
                 map(match_command, to_command),
                 match_nop, match_eof))(Span::new(s)) {
-        Ok((rest, parsed)) => Ok(parsed),
+        Ok((_, parsed)) => Ok(parsed),
         Err(err) => match err {
-            nom::Err::Incomplete(needed) => Err("parsing incomplete".to_owned()),
+            nom::Err::Incomplete(_) => Err("parsing incomplete".to_owned()),
             nom::Err::Error(e) => Err(e.message()),
             nom::Err::Failure(e) => Err(e.message()),
         },
     }
 }
 
-fn parse_line(input: String, state: &mut State) -> bool {
-    let parser_result = match_wrapper(state.config, &input);
+fn parse_line(input: String, state: &mut State) -> Result<(), bool> {
+    let parser_result = match_wrapper(&state.config, &input);
 
     let hist_entry = match parser_result {
         Ok(parsed) => match parsed {
             LineType::Assignment(k, v) => handle_assignment(state, input, k, v),
             LineType::Command(c) => handle_command(state, input, c),
-            LineType::EOF() => return true,
+            LineType::EOF() => return Err(true),
             LineType::Error(e) => on_parsing_error(state, input, &e),
             LineType::Lambda(t) => handle_lambda(state, input, t),
-            LineType::Nop() => return false,
+            LineType::Nop() => return Ok(()),
         },
         Err(msg) => on_parsing_error(state, input, &msg),
     };
 
+    let is_error = match hist_entry.parsed {
+        LineType::Error(_) => true,
+        _ => false,
+    };
+
     state.history.push(hist_entry);
-    return false;
+
+    if is_error {
+        return Err(false);
+    } else {
+        return Ok(());
+    }
 }
 
-fn main() {
-    // lambda_info("(((\\x . (\\y . x)) x) ((\\x . (x x)) (\\x . (x x))))");
-    let mut state = State::init();
+fn file(state: &mut State, filename: &str) {
+    let file = File::open(filename).expect("Unable to open file");
+    let mut reader = BufReader::new(file);
+
+    loop {
+        let mut line = String::new();
+        match reader.read_line(&mut line) {
+            Ok(n) => if n == 0 {
+                break;
+            },
+            Err(e) => {
+                println!("Fatal IO Error: {}", e.to_string());
+                break;
+            },
+        }
+
+        let line = line.trim().to_owned();
+
+        println!("> {}", line);
+        let result = parse_line(line, state);
+        if let Err(_) = result {
+            println!("A fatal error occurred while parsing '{}'", filename);
+            break;
+        }
+        println!();
+    }
+}
+
+fn repl(state: &mut State) {
     let mut rl = Editor::<()>::new().unwrap();
+
     loop {
         let line = rl.readline("[λ] ");
         match line {
             Ok(input) => {
                 rl.add_history_entry(input.as_str());
-                parse_line(input, &mut state);
+                let result = parse_line(input, state);
+                if let Err(fatal) = result {
+                    if fatal { break; }
+                }
                 println!();
             },
             Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
                 break
             },
             Err(err) => {
-                println!("Error: {:?}", err);
+                println!("Fatal Error: {:?}", err);
                 break
             }
         }
+    }
+}
+
+fn main() {
+    // lambda_info("(((\\x . (\\y . x)) x) ((\\x . (x x)) (\\x . (x x))))");
+    let config = Config::parse();
+    let mut state = State::init(config);
+
+    match &state.config.file {
+        Some(path) => {
+            let path = path.clone();
+            file(&mut state, &path)
+        },
+        None => repl(&mut state),
     }
     println!();
 }
