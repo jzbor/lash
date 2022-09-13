@@ -63,7 +63,7 @@ impl Command for BuiltinsCommand {
     }
 
     fn execute(&self, state: &mut State) -> String {
-        state.builtins.iter().map(|(k, v)| format!("{} = {}", k, v))
+        state.builtins.iter().map(|(k, v)| format!("{} = {}", k, v.to_string()))
             .collect::<Vec<String>>().join("\n")
     }
 
@@ -154,7 +154,7 @@ impl Command for PrintCommand {
         match state.builtins.get(self.var.as_str()) {
             Some(term) => term.to_string(),
             None => match state.variables.get(&self.var) {
-                Some(term) => term.clone(),
+                Some(term) => term.to_string(),
                 None => format!("Variable '{}' not found", self.var),
             },
         }
@@ -219,8 +219,12 @@ impl Command for StoreCommand {
 
     fn execute(&self, state: &mut State) -> String {
         if let Some(hist_entry) = state.last_lambda() {
-            state.add_variable(self.name.clone(), hist_entry.input.clone());
-            return format!("Added variable mapping for '{}'", self.name);
+            if let LineType::Lambda(tree) = &hist_entry.parsed {
+                state.add_variable(self.name.clone(), tree.clone());
+                return format!("Added variable mapping for '{}'", self.name);
+            } else {
+                panic!("Malformed history entry");
+            }
         } else {
             return String::from("no history entry found");
         }
@@ -242,7 +246,7 @@ impl Command for VariablesCommand {
     }
 
     fn execute(&self, state: &mut State) -> String {
-        state.variables.iter().map(|(k, v)| format!("{} = {}", k, v))
+        state.variables.iter().map(|(k, v)| format!("{} = {}", k, v.to_string()))
             .collect::<Vec<String>>().join("\n")
     }
 

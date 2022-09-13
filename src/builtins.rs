@@ -1,10 +1,12 @@
 use std::collections::HashMap;
+use crate::lambda::*;
+use crate::parsing::*;
 
 // Sources:
 // https://www8.cs.fau.de/ext/teaching/sose2022/thprog/skript.pdf
 // https://en.wikipedia.org/wiki/Lambda_calculus
 // https://en.wikipedia.org/wiki/Church_encoding
-
+//
 static BUILTINS: &'static [(&str, &str)] = &[
     // standard terms
     ("ID",      "\\x . x"),
@@ -33,10 +35,14 @@ static BUILTINS: &'static [(&str, &str)] = &[
     ("TAIL",    "\\l c n . l (\\h t g . g h (t c)) (\\t . n) (\\h t . t)"),
 ];
 
-pub fn get_builtins() -> HashMap<&'static str, &'static str> {
+pub fn get_builtins(parser: Parser) -> HashMap<&'static str, LambdaNode> {
     let mut hash_map = HashMap::new();
     for (k, v) in BUILTINS {
-        hash_map.insert(k.to_owned(), v.to_owned());
+        if let Ok((_, tree)) = lambda_matcher(parser)(Span::from(*v)) {
+            hash_map.insert(k.to_owned(), tree);
+        } else {
+            panic!("Builtin '{}' is broken!!!", k);
+        }
     }
     return hash_map;
 }

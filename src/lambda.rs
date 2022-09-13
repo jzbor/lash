@@ -300,17 +300,6 @@ impl LambdaNode {
         sigma.insert(var_name, replacement);
         return self.substitute(&sigma);
     }
-
-    pub fn with_vars(&self, var_map: &HashMap<&str, &str>, parser: Parser)
-            -> (LambdaNode, u32) {
-        let mut owned = HashMap::new();
-        for (k, v) in var_map {
-            let tree = lambda_matcher(parser)(Span::new(v)).unwrap().1;
-            owned.insert(*k, tree);
-        }
-        let sigma = owned.iter().map(|(k, v)| (*k, v)).collect();
-        return self.substitute(&sigma);
-    }
 }
 
 impl ReductionLambdaNode {
@@ -360,7 +349,7 @@ impl ReductionLambdaNode {
     }
 }
 
-pub fn assignment_matcher(parser: Parser) -> impl FnMut(Span) -> IResult<(String, String)> {
+pub fn assignment_matcher(parser: Parser) -> impl FnMut(Span) -> IResult<(String, LambdaNode)> {
     return move |s: Span| {
         let (rest, name) = map(match_variable_name, |s| s.to_owned())(s)?;
         let (rest, _) = space1(rest)?;
@@ -368,12 +357,12 @@ pub fn assignment_matcher(parser: Parser) -> impl FnMut(Span) -> IResult<(String
 
         let match_right_hand_side = |s| {
             let (rest, _) = space1(s)?;
-            return recognize(lambda_matcher(parser))(rest);
+            return lambda_matcher(parser)(rest);
         };
         let (rest, term) = with_err(match_right_hand_side(rest), rest,
                                 "missing right hand side on assignment".to_owned())?;
 
-        return Ok((rest, (name, (*term).to_owned())));
+        return Ok((rest, (name, term)));
     };
 }
 

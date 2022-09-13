@@ -22,11 +22,11 @@ mod state;
 mod builtins;
 mod parsing;
 
-fn handle_assignment(state: &mut State, input: String, name: String, value: String) -> HistoryEntry {
+fn handle_assignment(state: &mut State, input: String, name: String, term: LambdaNode) -> HistoryEntry {
     let mut hist_entry = HistoryEntry::default();
     hist_entry.input = input;
-    match state.add_variable(name.clone(), value.clone()) {
-        Ok(_) => hist_entry.parsed = LineType::Assignment(name, value),
+    match state.add_variable(name.clone(), term.clone()) {
+        Ok(term) => hist_entry.parsed = LineType::Assignment(name, term),
         Err(_) => {
             let msg = "Error: overwriting builtins is not allowed";
             println!("{}", msg);
@@ -49,18 +49,19 @@ fn handle_command(state: &mut State, input: String, command: Box<dyn Command>) -
 
 fn replace_builtins_and_variables(state: &State, tree: &LambdaNode) -> (LambdaNode, u32, u32) {
     let mut var_subs = 0;
-    let variables_borrowed = state.variables.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
+    let variables_borrowed = state.variables.iter().map(|(k, v)| (k.as_str(), v)).collect();
     let mut new_tree = tree.clone();
     loop {
-        let (t, vs) = new_tree.with_vars(&variables_borrowed, state.config.parser);
+        let (t, vs) = new_tree.substitute(&variables_borrowed);
         if vs == 0 { break; }
         new_tree = t;
         var_subs += vs;
     }
 
     let mut bi_subs = 0;
+    let builtins_borrowed = state.builtins.iter().map(|(k, v)| (*k, v)).collect();
     loop {
-        let (t, bs) = new_tree.with_vars(&state.builtins, state.config.parser);
+        let (t, bs) = new_tree.substitute(&builtins_borrowed);
         if bs == 0 { break; }
         new_tree = t;
         bi_subs += bs;

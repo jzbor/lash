@@ -5,7 +5,7 @@ use crate::builtins::*;
 
 #[derive(Debug)]
 pub enum LineType {
-    Assignment(String, String),
+    Assignment(String, LambdaNode),
     Command(Box<dyn Command>),
     EOF(),
     Error(String),
@@ -51,26 +51,32 @@ pub struct Config {
 pub struct State {
     pub history: Vec<HistoryEntry>,
     pub config: Config,
-    pub builtins: HashMap<&'static str, &'static str>,
-    pub variables: HashMap<String, String>,
+    pub builtins: HashMap<&'static str, LambdaNode>,
+    pub variables: HashMap<String, LambdaNode>,
 }
 
 impl State {
     pub fn init(config: Config) -> State {
+        let builtins = get_builtins(config.parser);
         return State {
             history: Vec::new(),
             config: config,
-            builtins: get_builtins(),
+            builtins: builtins,
             variables: HashMap::new(),
         }
     }
 
-    pub fn add_variable(&mut self, name: String, value: String) -> Result<(), ()> {
+    pub fn add_variable(&mut self, name: String, term: LambdaNode) -> Result<LambdaNode, ()> {
         if self.builtins.contains_key(name.as_str()) {
             return Err(());
+        } else if let Some(tree) = self.variables.get(&name) {
+            let sigma = HashMap::from([(name.as_str(), tree)]);
+            let (term, _) = term.substitute(&sigma);
+            self.variables.insert(name, term.clone());
+            return Ok(term);
         } else {
-            self.variables.insert(name, value);
-            return Ok(());
+            self.variables.insert(name, term.clone());
+            return Ok(term);
         }
     }
 
