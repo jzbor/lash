@@ -63,7 +63,7 @@ impl Command for BuiltinsCommand {
     }
 
     fn execute(&self, state: &mut State) -> String {
-        state.builtins.iter().map(|(k, v)| format!("{} = {}", k, v.to_string()))
+        state.builtins.iter().map(|(k, v)| format!("{}\t= {}", k, v.to_string()))
             .collect::<Vec<String>>().join("\n")
     }
 
@@ -246,7 +246,7 @@ impl Command for VariablesCommand {
     }
 
     fn execute(&self, state: &mut State) -> String {
-        state.variables.iter().map(|(k, v)| format!("{} = {}", k, v.to_string()))
+        state.variables.iter().map(|(k, v)| format!("{}\t= {}", k, v.to_string()))
             .collect::<Vec<String>>().join("\n")
     }
 

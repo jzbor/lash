@@ -195,7 +195,10 @@ fn repl(state: &mut State) {
                 }
                 println!();
             },
-            Err(ReadlineError::Interrupted) | Err(ReadlineError::Eof) => {
+            Err(ReadlineError::Interrupted) => {
+                println!();
+            },
+            Err(ReadlineError::Eof) => {
                 break
             },
             Err(err) => {
