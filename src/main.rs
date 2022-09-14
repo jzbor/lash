@@ -22,6 +22,13 @@ mod state;
 mod builtins;
 mod parsing;
 
+
+#[derive(Debug,Copy,Clone,Default,clap::ArgEnum)]
+pub enum Mode {
+    #[default]
+    Normalize, Reduce, Validate,
+}
+
 fn handle_assignment(state: &mut State, input: String, name: String, term: LambdaNode) -> HistoryEntry {
     let mut hist_entry = HistoryEntry::default();
     hist_entry.input = input;
@@ -72,17 +79,38 @@ fn replace_builtins_and_variables(state: &State, tree: &LambdaNode) -> (LambdaNo
 
 fn handle_lambda(state: &State, input: String, tree: LambdaNode) -> HistoryEntry {
     let (tree, bsubs, vsubs) = replace_builtins_and_variables(state, &tree);
-    let (normal, nbeta) = tree.normalize(state.config.strategy);
-    println!("{}", normal.to_string());
-
-    return HistoryEntry {
-        input: input,
-        parsed: LineType::Lambda(tree),
-        output: normal.to_string(),
-        nbeta: nbeta,
-        var_subs: vsubs,
-        bi_subs: bsubs,
+    let result = match state.config.mode {
+        Mode::Normalize => normalize(&tree, state.config.strategy),
+        Mode::Reduce => reduce(&tree, state.config.strategy),
+        Mode::Validate => Ok((tree, 0)),
     };
+
+    return match result {
+        Ok((tree, nbeta)) => {
+            let output = format!("{}", tree.to_string());
+            println!("{}", output);
+            HistoryEntry {
+                input: input,
+                parsed: LineType::Lambda(tree),
+                output: output,
+                nbeta: nbeta,
+                var_subs: vsubs,
+                bi_subs: bsubs,
+            }
+        },
+        Err(msg) => {
+            let output = format!("Error: {}", &msg);
+            println!("{}", output);
+            HistoryEntry {
+                input: input,
+                parsed: LineType::Error(msg),
+                output: output,
+                nbeta: 0,
+                var_subs: vsubs,
+                bi_subs: bsubs,
+            }
+        },
+    }
 }
 
 fn on_parsing_error(_state: &State, input: String, msg: &str) -> HistoryEntry {
@@ -124,6 +152,10 @@ fn match_wrapper(config: &Config, s: &str) -> Result<LineType, String> {
     }
 }
 
+fn normalize(tree: &LambdaNode, strategy: ReductionStrategy) -> Result<(LambdaNode, u32), String> {
+    return Ok(tree.normalize(strategy));
+}
+
 fn parse_line(input: String, state: &mut State) -> Result<(), bool> {
     let parser_result = match_wrapper(&state.config, &input);
 
@@ -151,6 +183,11 @@ fn parse_line(input: String, state: &mut State) -> Result<(), bool> {
     } else {
         return Ok(());
     }
+}
+
+fn reduce(tree: &LambdaNode, strategy: ReductionStrategy) -> Result<(LambdaNode, u32), String> {
+    let tree = tree.reduce(strategy);
+    return Ok((tree, 1));
 }
 
 fn file(state: &mut State, filename: &str) {

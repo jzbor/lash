@@ -220,8 +220,11 @@ impl Command for StoreCommand {
     fn execute(&self, state: &mut State) -> String {
         if let Some(hist_entry) = state.last_lambda() {
             if let LineType::Lambda(tree) = &hist_entry.parsed {
-                state.add_variable(self.name.clone(), tree.clone());
-                return format!("Added variable mapping for '{}'", self.name);
+                let result = state.add_variable(self.name.clone(), tree.clone());
+                return match result {
+                    Ok(_) => format!("Added variable mapping for '{}'", self.name),
+                    Err(()) => format!("Unable to overwrite builtin"),
+                }
             } else {
                 panic!("Malformed history entry");
             }

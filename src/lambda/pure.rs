@@ -4,7 +4,6 @@ use nom::{
 };
 
 use crate::lambda::*;
-use crate::parsing::*;
 
 // @TODO this parser does not seem to handle applications well (try "(asdf jkl)")
 //

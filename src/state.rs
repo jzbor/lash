@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use crate::commands::*;
 use crate::lambda::*;
 use crate::builtins::*;
+use crate::Mode;
 
 #[derive(Debug)]
 pub enum LineType {
@@ -46,6 +47,9 @@ pub struct Config {
 
     #[clap(short, long, value_parser)]
     pub file: Option<String>,
+
+    #[clap(short, long, arg_enum, value_parser, default_value_t)]
+    pub mode: Mode,
 }
 
 pub struct State {
@@ -100,6 +104,7 @@ impl Default for Config {
             parser: Parser::Default,
             strategy: ReductionStrategy::Normal,
             file: None,
+            mode: Mode::Normalize,
         };
     }
 }
