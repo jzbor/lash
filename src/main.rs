@@ -45,11 +45,21 @@ fn handle_assignment(state: &mut State, input: String, name: String, term: Lambd
 }
 
 fn handle_command(state: &mut State, input: String, command: Box<dyn Command>) -> HistoryEntry {
-    let output = command.execute(state);
-    println!("{}", output);
     let mut hist_entry = HistoryEntry::default();
+    let output = match command.execute(state) {
+        Ok(answer) => {
+            hist_entry.parsed = LineType::Command(command);
+            answer
+        },
+        Err(msg) => {
+            let output = format!("Error: {}", msg);
+            hist_entry.parsed = LineType::Error(output.clone());
+            output
+        },
+    };
+
+    println!("{}", output);
     hist_entry.input = input;
-    hist_entry.parsed = LineType::Command(command);
     hist_entry.output = output;
     return hist_entry;
 }

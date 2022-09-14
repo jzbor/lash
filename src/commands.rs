@@ -39,7 +39,7 @@ struct VariablesCommand;
 
 
 pub trait Command: Debug {
-    fn execute(&self, state: &mut State) -> String;
+    fn execute(&self, state: &mut State) -> Result<String, String>;
     fn clone_to_box(&self) -> Box<dyn Command>;
     fn keyword() -> &'static str where Self: Sized;
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> where Self: Sized;
@@ -62,9 +62,9 @@ impl Command for BuiltinsCommand {
         return Box::new(self.clone());
     }
 
-    fn execute(&self, state: &mut State) -> String {
-        state.builtins.iter().map(|(k, v)| format!("{}\t= {}", k, v.to_string()))
-            .collect::<Vec<String>>().join("\n")
+    fn execute(&self, state: &mut State) -> Result<String, String> {
+        Ok(state.builtins.iter().map(|(k, v)| format!("{}\t= {}", k, v.to_string()))
+            .collect::<Vec<String>>().join("\n"))
     }
 
     fn keyword() -> &'static str {
@@ -81,8 +81,8 @@ impl Command for EchoCommand {
         return Box::new(self.clone());
     }
 
-    fn execute(&self, _state: &mut State) -> String {
-        return format!(" {} ", self.msg);
+    fn execute(&self, _state: &mut State) -> Result<String, String> {
+        return Ok(format!(" {} ", self.msg));
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
@@ -100,13 +100,13 @@ impl Command for HistoryCommand {
         return Box::new(self.clone());
     }
 
-    fn execute(&self, state: &mut State) -> String {
+    fn execute(&self, state: &mut State) -> Result<String, String> {
         if state.history.is_empty() {
-            return format!("no history entry found");
+            return Err(format!("no history entry found"));
         } else {
             let items: Vec<String> = state.history.iter()
                 .map(|e| e.to_string()).collect();
-            return items.join("\n");
+            return Ok(items.join("\n"));
         }
     }
 
@@ -124,15 +124,14 @@ impl Command for InfoCommand {
         return Box::new(self.clone());
     }
 
-    fn execute(&self, state: &mut State) -> String {
+    fn execute(&self, state: &mut State) -> Result<String, String> {
         let option = state.last_lambda();
         match option {
-            Some(e) => format!(
-"beta reductions: {}
+            Some(e) => Ok(format!("beta reductions: {}
 builtin substitutions: {}
 variable substitutions: {}",
-                               e.nbeta, e.bi_subs, e. var_subs),
-            None => format!("no history entry found"),
+                    e.nbeta, e.bi_subs, e. var_subs)),
+            None => Err(format!("no history entry found")),
         }
     }
 
@@ -150,12 +149,12 @@ impl Command for PrintCommand {
         return Box::new(self.clone());
     }
 
-    fn execute(&self, state: &mut State) -> String {
+    fn execute(&self, state: &mut State) -> Result<String, String> {
         match state.builtins.get(self.var.as_str()) {
-            Some(term) => term.to_string(),
+            Some(term) => Ok(term.to_string()),
             None => match state.variables.get(&self.var) {
-                Some(term) => term.to_string(),
-                None => format!("Variable '{}' not found", self.var),
+                Some(term) => Ok(term.to_string()),
+                None => Err(format!("variable '{}' not found", self.var)),
             },
         }
     }
@@ -178,7 +177,7 @@ impl Command for StepsCommand {
         return Box::new(self.clone());
     }
 
-    fn execute(&self, state: &mut State) -> String {
+    fn execute(&self, state: &mut State) -> Result<String, String> {
         if let Some(hist_entry) = state.last_lambda() {
             if let LineType::Lambda(initial_tree) = &hist_entry.parsed {
                 let mut lines = Vec::new();
@@ -194,12 +193,12 @@ impl Command for StepsCommand {
                         tree = t;
                     }
                 }
-                return lines.join("\n");
+                return Ok(lines.join("\n"));
             } else {
                 panic!("last_lambda() didn't return lambda entry");
             }
         } else {
-            return String::from("no history entry found");
+            return Err("no history entry found".to_owned());
         }
     }
 
@@ -217,19 +216,19 @@ impl Command for StoreCommand {
         return Box::new(self.clone());
     }
 
-    fn execute(&self, state: &mut State) -> String {
+    fn execute(&self, state: &mut State) -> Result<String, String> {
         if let Some(hist_entry) = state.last_lambda() {
             if let LineType::Lambda(tree) = &hist_entry.parsed {
                 let result = state.add_variable(self.name.clone(), tree.clone());
                 return match result {
-                    Ok(_) => format!("Added variable mapping for '{}'", self.name),
-                    Err(()) => format!("Unable to overwrite builtin"),
+                    Ok(_) => Ok(format!("Added variable mapping for '{}'", self.name)),
+                    Err(()) => Err(format!("unable to overwrite builtin '{}'", self.name)),
                 }
             } else {
                 panic!("Malformed history entry");
             }
         } else {
-            return String::from("no history entry found");
+            return Err("no history entry found".to_owned());
         }
     }
 
@@ -248,9 +247,9 @@ impl Command for VariablesCommand {
         return Box::new(self.clone());
     }
 
-    fn execute(&self, state: &mut State) -> String {
-        state.variables.iter().map(|(k, v)| format!("{}\t= {}", k, v.to_string()))
-            .collect::<Vec<String>>().join("\n")
+    fn execute(&self, state: &mut State) -> Result<String, String> {
+        Ok(state.variables.iter().map(|(k, v)| format!("{}\t= {}", k, v.to_string()))
+            .collect::<Vec<String>>().join("\n"))
     }
 
     fn keyword() -> &'static str {
