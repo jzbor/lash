@@ -31,6 +31,9 @@ struct NormalizeCommand { term: LambdaNode }
 #[derive(Clone,Debug,Default)]
 struct PrintCommand { var: String }
 
+#[derive(Clone,Debug)]
+struct ReduceCommand { term: LambdaNode }
+
 #[derive(Clone,Debug,Default)]
 struct StepsCommand;
 
@@ -196,6 +199,31 @@ impl Command for PrintCommand {
     }
 }
 
+impl Command for ReduceCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> Result<String, String> {
+        match self.term.next_redex(state.config.strategy) {
+            Some((redex, _depth)) => {
+                let reduced = self.term.reduce(state.config.strategy);
+                return Ok(format!("Redex: {}\n => {}", redex.to_string(), reduced.to_string()));
+            },
+            None => return Ok("This term already has normal form".to_owned()),
+        }
+    }
+
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
+        let (rest, tree) = match_complete_lambda(s)?;
+        return Ok((rest, Box::new(ReduceCommand { term: tree })));
+    }
+
+    fn keyword() -> &'static str {
+        return "reduce";
+    }
+}
+
 impl Command for StepsCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
         return Box::new(self.clone());
@@ -306,6 +334,7 @@ pub fn match_command(s: Span) -> IResult<Box<dyn Command>> {
         InfoCommand::match_command,
         NormalizeCommand::match_command,
         PrintCommand::match_command,
+        ReduceCommand::match_command,
         StepsCommand::match_command,
         StoreCommand::match_command,
         VariablesCommand::match_command,
