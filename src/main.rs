@@ -149,8 +149,8 @@ fn match_wrapper(config: &Config, s: &str) -> Result<LineType, String> {
     let to_assignment = |(k, v)| LineType::Assignment(k, v);
     let (s, _) = space0::<&str, ()>(s).unwrap();
 
-    match alt((map(assignment_matcher(config.parser), to_assignment),
-                map(lambda_matcher(config.parser), to_lambda),
+    match alt((map(match_assignment, to_assignment),
+                map(match_lambda, to_lambda),
                 map(match_command, to_command),
                 match_nop, match_eof))(Span::new(s)) {
         Ok((_, parsed)) => Ok(parsed),

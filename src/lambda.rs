@@ -9,7 +9,6 @@ use nom::{
 
 use crate::parsing::*;
 
-mod pure;
 mod impure;
 
 
@@ -349,21 +348,19 @@ impl ReductionLambdaNode {
     }
 }
 
-pub fn assignment_matcher(parser: Parser) -> impl FnMut(Span) -> IResult<(String, LambdaNode)> {
-    return move |s: Span| {
-        let (rest, name) = map(match_variable_name, |s| s.to_owned())(s)?;
-        let (rest, _) = space1(rest)?;
-        let (rest, _) = char('=')(rest)?;
+pub fn match_assignment(s: Span) -> IResult<(String, LambdaNode)> {
+    let (rest, name) = map(match_variable_name, |s| s.to_owned())(s)?;
+    let (rest, _) = space1(rest)?;
+    let (rest, _) = char('=')(rest)?;
 
-        let match_right_hand_side = |s| {
-            let (rest, _) = space1(s)?;
-            return lambda_matcher(parser)(rest);
-        };
-        let (rest, term) = with_err(match_right_hand_side(rest), rest,
-                                "missing right hand side on assignment".to_owned())?;
-
-        return Ok((rest, (name, term)));
+    let match_right_hand_side = |s| {
+        let (rest, _) = space1(s)?;
+        return match_lambda(rest);
     };
+    let (rest, term) = with_err(match_right_hand_side(rest), rest,
+                            "missing right hand side on assignment".to_owned())?;
+
+    return Ok((rest, (name, term)));
 }
 
 fn apply_substitution(var: &str, sigma: &HashMap<&str, &LambdaNode>) -> (LambdaNode, u32) {
@@ -394,25 +391,10 @@ fn fresh_var(old_var: &str, rotten: HashSet<String>) -> String {
     return new_var;
 }
 
-pub fn lambda_matcher(parser: Parser) -> impl FnMut(Span) -> IResult<LambdaNode> {
-    return move |s| {
-        let match_lambda = match parser {
-            Parser::Default => match_lambda_default,
-            Parser::Pure => match_lambda_pure,
-        };
-        return match_lambda(s)
-                .conclude(|r| format!("unable to parse lambda expression ('{}')", r));
-    }
+pub fn match_lambda(s: Span) -> IResult<LambdaNode> {
+    return impure::match_lambda(s)
+            .conclude(|r| format!("unable to parse lambda expression ('{}')", r));
 }
-
-pub fn match_lambda_default(s: Span) -> IResult<LambdaNode> {
-    impure::match_lambda(s)
-}
-
-pub fn match_lambda_pure(s: Span) -> IResult<LambdaNode> {
-    pure::match_lambda(s)
-}
-
 
 fn match_lambda_sign(s: Span) -> IResult<Span> {
     return recognize(char('\\'))(s);

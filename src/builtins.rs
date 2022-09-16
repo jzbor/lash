@@ -38,7 +38,7 @@ static BUILTINS: &'static [(&str, &str)] = &[
 pub fn get_builtins(parser: Parser) -> HashMap<&'static str, LambdaNode> {
     let mut hash_map = HashMap::new();
     for (k, v) in BUILTINS {
-        if let Ok((_, tree)) = lambda_matcher(parser)(Span::from(*v)) {
+        if let Ok((_, tree)) = match_lambda(Span::from(*v)) {
             hash_map.insert(k.to_owned(), tree);
         } else {
             panic!("Builtin '{}' is broken!!!", k);

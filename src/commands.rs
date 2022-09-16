@@ -159,7 +159,7 @@ impl Command for NormalizeCommand {
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
-        let (rest, tree) = lambda_matcher(Parser::Default)(s)?;
+        let (rest, tree) = match_lambda(s)?;
         return Ok((rest, Box::new(NormalizeCommand { term: tree })));
     }
 
