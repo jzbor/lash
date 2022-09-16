@@ -25,6 +25,9 @@ struct HistoryCommand;
 #[derive(Clone,Debug,Default)]
 struct InfoCommand;
 
+#[derive(Clone,Debug)]
+struct NormalizeCommand { term: LambdaNode }
+
 #[derive(Clone,Debug,Default)]
 struct PrintCommand { var: String }
 
@@ -51,7 +54,8 @@ pub trait Command: Debug {
     fn match_command(s: Span) -> IResult<Box<dyn Command>> where Self: Sized {
         let (rest, _) = with_err(tag(Self::keyword())(s), s,
                                  format!("unknown command '{}'", s))?;
-        let (rest, _) = alt((recognize(space1), recognize(pair(space0,eof))))(rest)?;
+        let (rest, _) = with_err(alt((recognize(space1), recognize(pair(space0,eof))))(rest), rest,
+                                 format!("unknown command"))?;
         return Self::match_arguments(rest);
     }
 }
@@ -141,6 +145,26 @@ variable substitutions: {}",
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         return match_no_arguments::<Self>()(s);
+    }
+}
+
+impl Command for NormalizeCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> Result<String, String> {
+        let (normal, nbeta) = self.term.normalize(state.config.strategy);
+        return Ok(format!("Normal form: {}\nBeta reductions: {}", normal.to_string(), nbeta));
+    }
+
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
+        let (rest, tree) = lambda_matcher(Parser::Default)(s)?;
+        return Ok((rest, Box::new(NormalizeCommand { term: tree })));
+    }
+
+    fn keyword() -> &'static str {
+        return "normal";
     }
 }
 
@@ -280,6 +304,7 @@ pub fn match_command(s: Span) -> IResult<Box<dyn Command>> {
         EchoCommand::match_command,
         HistoryCommand::match_command,
         InfoCommand::match_command,
+        NormalizeCommand::match_command,
         PrintCommand::match_command,
         StepsCommand::match_command,
         StoreCommand::match_command,
