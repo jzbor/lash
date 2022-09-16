@@ -124,12 +124,9 @@ fn match_abstraction(s: Span) -> IResult<LambdaNode> {
     let (rest, _) = space0(rest)?;
     let (rest, _) = with_err(char('.')(rest), rest,
                              "expected '.' after abstraction variables".to_owned())?;
-    let match_inner = |s| {
-        let (rest, _) = space0(s)?;
-        return match_lambda(rest);
-    };
-    let (rest, inner) = with_err(match_inner(rest), rest,
-                             "missing inner term on abstraction".to_owned())?;
+    let (rest, _) = space0(rest)?;
+    let (rest, inner) = with_err(match_lambda(rest), rest,
+                             "invalid or missing inner term on abstraction".to_owned())?;
 
     let mut current_abstraction = LambdaNode::Abstraction(variables.pop_back().unwrap()
                                                           .to_owned(), Box::new(inner));
