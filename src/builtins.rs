@@ -35,10 +35,10 @@ static BUILTINS: &'static [(&str, &str)] = &[
     ("TAIL",    "\\l c n . l (\\h t g . g h (t c)) (\\t . n) (\\h t . t)"),
 ];
 
-pub fn get_builtins(parser: Parser) -> HashMap<&'static str, LambdaNode> {
+pub fn get_builtins() -> HashMap<&'static str, LambdaNode> {
     let mut hash_map = HashMap::new();
     for (k, v) in BUILTINS {
-        if let Ok((_, tree)) = match_lambda(Span::from(*v)) {
+        if let Ok((_, tree)) = match_complete_lambda(Span::from(*v)) {
             hash_map.insert(k.to_owned(), tree);
         } else {
             panic!("Builtin '{}' is broken!!!", k);

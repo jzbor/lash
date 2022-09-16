@@ -143,14 +143,14 @@ fn match_eof(s: Span) -> IResult<LineType> {
 }
 
 
-fn match_wrapper(config: &Config, s: &str) -> Result<LineType, String> {
+fn match_wrapper(s: &str) -> Result<LineType, String> {
     let to_command = |c| LineType::Command(c);
     let to_lambda = |l| LineType::Lambda(l);
     let to_assignment = |(k, v)| LineType::Assignment(k, v);
     let (s, _) = space0::<&str, ()>(s).unwrap();
 
     match alt((map(match_assignment, to_assignment),
-                map(match_lambda, to_lambda),
+                map(match_complete_lambda, to_lambda),
                 map(match_command, to_command),
                 match_nop, match_eof))(Span::new(s)) {
         Ok((_, parsed)) => Ok(parsed),
@@ -167,7 +167,7 @@ fn normalize(tree: &LambdaNode, strategy: ReductionStrategy) -> Result<(LambdaNo
 }
 
 fn parse_line(input: String, state: &mut State) -> Result<(), bool> {
-    let parser_result = match_wrapper(&state.config, &input);
+    let parser_result = match_wrapper(&input);
 
     let hist_entry = match parser_result {
         Ok(parsed) => match parsed {

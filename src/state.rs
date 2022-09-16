@@ -39,9 +39,6 @@ pub struct HistoryEntry {
 
 #[derive(Debug,Clone,clap::Parser)]
 pub struct Config {
-    #[clap(skip)]
-    pub parser: Parser,
-
     #[clap(short, long, arg_enum, value_parser, default_value_t)]
     pub strategy: ReductionStrategy,
 
@@ -61,7 +58,7 @@ pub struct State {
 
 impl State {
     pub fn init(config: Config) -> State {
-        let builtins = get_builtins(config.parser);
+        let builtins = get_builtins();
         return State {
             history: Vec::new(),
             config: config,
@@ -101,7 +98,6 @@ impl State {
 impl Default for Config {
     fn default() -> Config {
         return Config {
-            parser: Parser::Default,
             strategy: ReductionStrategy::Normal,
             file: None,
             mode: Mode::Normalize,

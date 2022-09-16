@@ -1,22 +1,12 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 use nom::{
-    bytes::complete::*,
     character::complete::*,
     combinator::*,
-    character::*,
 };
 
 use crate::parsing::*;
 
-mod impure;
-
-
-#[derive(Debug,Copy,Clone,Default)]
-pub enum Parser {
-    #[default]
-    Default, Pure,
-}
 
 #[derive(Debug,Clone,PartialEq)]
 pub enum LambdaNode {
@@ -355,7 +345,7 @@ pub fn match_assignment(s: Span) -> IResult<(String, LambdaNode)> {
 
     let match_right_hand_side = |s| {
         let (rest, _) = space1(s)?;
-        return match_lambda(rest);
+        return match_complete_lambda(rest);
     };
     let (rest, term) = with_err(match_right_hand_side(rest), rest,
                             "missing right hand side on assignment".to_owned())?;
@@ -391,16 +381,3 @@ fn fresh_var(old_var: &str, rotten: HashSet<String>) -> String {
     return new_var;
 }
 
-pub fn match_lambda(s: Span) -> IResult<LambdaNode> {
-    return impure::match_lambda(s)
-            .conclude(|r| format!("unable to parse lambda expression ('{}')", r));
-}
-
-fn match_lambda_sign(s: Span) -> IResult<Span> {
-    return recognize(char('\\'))(s);
-}
-
-pub fn match_variable_name<'a>(s: Span<'a>) -> IResult<&'a str> {
-    let (rest, name) = take_while1(|x| is_alphanumeric(x as u8) || x == '-' || x == '_' || x == '\'')(s)?;
-    return Ok((rest, *name));
-}
