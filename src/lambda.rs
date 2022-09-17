@@ -15,6 +15,14 @@ pub enum LambdaNode {
     Application(Box<LambdaNode>, Box<LambdaNode>),
 }
 
+#[derive(Debug,Clone,PartialEq)]
+pub enum DeBruijnNode {
+    BoundVariable(u32), // binder
+    FreeVariable(String), // variable name
+    Abstraction(Box<DeBruijnNode>), // term
+    Application(Box<DeBruijnNode>, Box<DeBruijnNode>),
+}
+
 #[derive(Debug,Clone)]
 pub enum ReductionLambdaNode {
     Variable(String), // variable name
@@ -26,6 +34,38 @@ pub enum ReductionLambdaNode {
 pub enum ReductionStrategy {
     #[default]
     Normal, Applicative,
+}
+
+impl DeBruijnNode {
+    pub fn to_string(&self) -> String {
+        match self {
+            DeBruijnNode::FreeVariable(name) => name.clone(),
+            DeBruijnNode::BoundVariable(i) => format!("{}", i),
+            DeBruijnNode::Abstraction(term)
+                => format!("{} {}", '\\', term.to_string()),
+            DeBruijnNode::Application(term1, term2)
+                => {
+                    let s1 = if let DeBruijnNode::FreeVariable(name) = &**term1 {
+                        format!("{}", name)
+                    } else if let DeBruijnNode::BoundVariable(i) = &**term1 {
+                        format!("{}", i)
+                    } else if let DeBruijnNode::Application(_, _) = &**term1 {
+                        format!("{}", term1.to_string())
+                    } else {
+                        format!("({})", term1.to_string())
+                    };
+                    let s2 = if let DeBruijnNode::FreeVariable(name) = &**term2 {
+                        format!("{}", name)
+                    } else if let DeBruijnNode::BoundVariable(i) = &**term2 {
+                        format!("{}", i)
+                    } else {
+                        format!("({})", term2.to_string())
+                    };
+                    format!("{} {}", s1, s2)
+                },
+        }
+    }
+
 }
 
 impl LambdaNode {
@@ -272,6 +312,36 @@ impl LambdaNode {
             LambdaNode::Application(term1, term2)
                 => ReductionLambdaNode::Application(mark, Box::new(term1.to_reduction_lambda_node(false)),
                                                     Box::new(term2.to_reduction_lambda_node(false))),
+        }
+    }
+
+    pub fn to_debrujin(&self) -> DeBruijnNode {
+        return self.to_debrujin_helper(&mut HashMap::new());
+    }
+
+    fn to_debrujin_helper<'a>(&'a self, map: &mut HashMap<&'a str, u32>) -> DeBruijnNode {
+        match self {
+            LambdaNode::Variable(name) => {
+                if map.contains_key(name.as_str()) {
+                    DeBruijnNode::BoundVariable(*map.get(name.as_str()).unwrap())
+                } else {
+                    DeBruijnNode::FreeVariable(name.clone())
+                }
+            },
+            LambdaNode::Abstraction(var_name, inner) => {
+                let next_index = match map.values().max() {
+                    Some(ui) => *ui,
+                    None => 1,
+                };
+                map.insert(var_name, next_index);
+                let new = DeBruijnNode::Abstraction(Box::new(inner.to_debrujin_helper(map)));
+                map.remove(var_name.as_str());
+                new
+            },
+            LambdaNode::Application(left, right) => {
+                DeBruijnNode::Application(Box::new(left.to_debrujin_helper(map)),
+                                            Box::new(right.to_debrujin_helper(map)))
+            },
         }
     }
 

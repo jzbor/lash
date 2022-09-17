@@ -17,6 +17,9 @@ use crate::parsing::*;
 struct BuiltinsCommand;
 
 #[derive(Clone,Debug,Default)]
+struct DeBruijnCommand { term: Option<LambdaNode> }
+
+#[derive(Clone,Debug,Default)]
 struct EchoCommand { msg: String }
 
 #[derive(Clone,Debug,Default)]
@@ -80,6 +83,41 @@ impl Command for BuiltinsCommand {
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         return match_no_arguments::<Self>()(s);
+    }
+}
+
+impl Command for DeBruijnCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> Result<String, String> {
+        match &self.term {
+            Some(term) => Ok(term.to_debrujin().to_string()),
+            None => if let Some(hist_entry) = state.last_lambda() {
+                if let LineType::Lambda(tree) = &hist_entry.parsed {
+                    Ok(tree.to_debrujin().to_string())
+                } else {
+                    panic!("last_lambda() didn't return lambda entry");
+                }
+            } else {
+                return Err("no history entry found".to_owned());
+            }
+        }
+    }
+
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
+        let (rest, _) = space0(s)?;
+        if eof::<Span,()>(s).is_ok() {
+            return Ok((rest, Box::new(DeBruijnCommand { term: None })));
+        } else {
+            let (rest, tree) = match_complete_lambda(s)?;
+            return Ok((rest, Box::new(DeBruijnCommand { term: Some(tree) })));
+        }
+    }
+
+    fn keyword() -> &'static str {
+        return "debruijn";
     }
 }
 
@@ -329,6 +367,7 @@ pub fn match_command(s: Span) -> IResult<Box<dyn Command>> {
 
     let command_matchers = (
         BuiltinsCommand::match_command,
+        DeBruijnCommand::match_command,
         EchoCommand::match_command,
         HistoryCommand::match_command,
         InfoCommand::match_command,
