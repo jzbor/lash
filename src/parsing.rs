@@ -113,10 +113,6 @@ pub fn with_err<'a, O>(result: IResult<'a, O>, s: Span<'a>, msg: String) -> IRes
     return result.map_err(|_| nom::Err::Error(ParseError::new(msg, s)));
 }
 
-fn match_lambda(s: Span) -> IResult<LambdaNode> {
-    return alt((match_abstraction, match_application))(s);
-}
-
 fn match_abstraction(s: Span) -> IResult<LambdaNode> {
     let (rest, _) = match_lambda_sign(s)?;
     let (rest, _) = space0(rest)?;
@@ -137,26 +133,10 @@ fn match_abstraction(s: Span) -> IResult<LambdaNode> {
     return Ok((rest, current_abstraction));
 }
 
-fn vec_to_application(mut terms: Vec<LambdaNode>) -> LambdaNode {
-    if terms.len() < 1 {
-        panic!("Invalid number of input terms for application");
-    } else if terms.len() == 1 {
-        return terms.pop().unwrap();
-    } else {
-        let right = terms.pop().unwrap();
-        let left = vec_to_application(terms);
-        return LambdaNode::Application(Box::new(left), Box::new(right));
-    }
-}
-
 fn match_application(s: Span) -> IResult<LambdaNode> {
     let (rest, terms) = separated_list1(space1, match_group)(s)?;
     let node = vec_to_application(terms);
     return Ok((rest, node));
-}
-
-fn match_group(s: Span) -> IResult<LambdaNode> {
-    return alt((match_variable, match_bracketed))(s);
 }
 
 fn match_bracketed(s: Span) -> IResult<LambdaNode> {
@@ -167,6 +147,29 @@ fn match_bracketed(s: Span) -> IResult<LambdaNode> {
     let (rest, _) = char(')')(rest)?;
 
     return Ok((rest, lambda));
+}
+
+fn match_numeral(s: Span) -> IResult<LambdaNode> {
+    let (rest, _) = char('$')(s)?;
+    let (rest, n) = match_u32(rest)?;
+    return Ok((rest, LambdaNode::church_numeral(n)));
+}
+
+fn match_group(s: Span) -> IResult<LambdaNode> {
+    return alt((match_variable, match_bracketed, match_numeral))(s);
+}
+
+fn match_lambda(s: Span) -> IResult<LambdaNode> {
+    return alt((match_abstraction, match_application))(s);
+}
+
+fn match_u32(s: Span) -> IResult<u32> {
+    let (rest, digits) = recognize(digit1)(s)?;
+    let uint = match str::parse(*digits) {
+        Ok(ui) => ui,
+        Err(_) => return Err(nom::Err::Error(ParseError::new("unable to parse number".to_owned(), s))),
+    };
+    return Ok((rest, uint));
 }
 
 fn match_variable(s: Span) -> IResult<LambdaNode> {
@@ -199,3 +202,16 @@ fn match_variable_list<'a>(s: Span<'a>) -> IResult<Vec<&'a str>> {
 
     return Ok((rest, variables));
 }
+
+fn vec_to_application(mut terms: Vec<LambdaNode>) -> LambdaNode {
+    if terms.len() < 1 {
+        panic!("Invalid number of input terms for application");
+    } else if terms.len() == 1 {
+        return terms.pop().unwrap();
+    } else {
+        let right = terms.pop().unwrap();
+        let left = vec_to_application(terms);
+        return LambdaNode::Application(Box::new(left), Box::new(right));
+    }
+}
+

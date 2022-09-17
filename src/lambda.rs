@@ -29,6 +29,22 @@ pub enum ReductionStrategy {
 }
 
 impl LambdaNode {
+    pub fn church_numeral(n: u32) -> LambdaNode {
+        return LambdaNode::Abstraction("f".to_owned(),
+                    Box::new(LambdaNode::Abstraction("x".to_owned(),
+                        Box::new(Self::church_applications(n)))));
+    }
+
+    pub fn church_applications(n: u32) -> LambdaNode {
+        if n == 0 {
+            return LambdaNode::Variable("x".to_owned());
+        } else {
+            return LambdaNode::Application(
+                        Box::new(LambdaNode::Variable("f".to_owned())),
+                        Box::new(Self::church_applications(n - 1)));
+        }
+    }
+
     pub fn application_possible(&self) -> bool {
         if let LambdaNode::Application(left, _right) = self {
             return left.is_abstraction();

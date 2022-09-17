@@ -7,10 +7,11 @@ The shell can evaluate lambda expressions or execute [commands](#commands).
 It is not fully tested yet, but you can help with that :).
 
 ## Features
-* normal (leftmost-outermost) and applicative (leftmost-innermost) evaluation strategies
+* normal (leftmost-outermost) and applicative (leftmost-innermost) reduction strategies
 * capture-avoiding substitution
 * simple constructs provided via builtins
-* commands giving more information on reduction and normalization
+* church numerals
+* commands for processing lambda terms
 
 ## Commands
 * `:builtins` list builtin terms
@@ -30,6 +31,7 @@ line        := command | lambda
 command     := :keyword args
 assignment  := variable-name = lambda
 variable    := [a-zA-Z0-9_'-]*
+numeral     := $[1-9][0-9]*
 ```
 
 ### Lambda Syntax
@@ -37,6 +39,6 @@ variable    := [a-zA-Z0-9_'-]*
 lambda      := abstraction | application
 abstraction := \variable-list . lambda
 application := group group*
-group       := variable | (lambda)
+group       := variable | numeral | (lambda)
 ```
 

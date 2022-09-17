@@ -33,6 +33,13 @@ static BUILTINS: &'static [(&str, &str)] = &[
     ("CONS",    "\\h t c n . c h (t c n)"),
     ("HEAD",    "\\l . l (\\h t. h) FALSE"),
     ("TAIL",    "\\l c n . l (\\h t g . g h (t c)) (\\t . n) (\\h t . t)"),
+    // church numerals
+    ("ADD",     "\\m n f x . m f (n f x)"),
+    ("SUCC",    "\\n f x . f (n f x)"),
+    ("MULT",    "\\m n f x . m (n f) x"),
+    ("EXP",     "\\m n . n m"),
+    ("PRED",    "\\n f x . n (\\g h . h (g f)) (\\u . x) (\\u . u)"),
+    ("SUB",     "\\m n . (n PRED) m"),
 ];
 
 pub fn get_builtins() -> HashMap<&'static str, LambdaNode> {
