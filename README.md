@@ -17,7 +17,9 @@ It is not fully tested yet, but you can help with that :).
 * `:echo <msg>`: output message to stdout
 * `:hist` show history
 * `:info`: get useful information on the last evaluated lambda expression
+* `:normal <term>` normalize term
 * `:print <name>`: print assigned value for variable or builtin
+* `:reduce <term>` perform one reduction on term
 * `:steps` print reduction steps of last term
 * `:store <name>` store last term into a variable
 * `:vars` list variables
