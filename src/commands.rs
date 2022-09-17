@@ -14,6 +14,9 @@ use crate::parsing::*;
 
 
 #[derive(Clone,Debug,Default)]
+struct AlphaEqCommand { first: String, second: String }
+
+#[derive(Clone,Debug,Default)]
 struct BuiltinsCommand;
 
 #[derive(Clone,Debug,Default)]
@@ -66,6 +69,44 @@ pub trait Command: Debug {
     }
 }
 
+impl Command for AlphaEqCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> Result<String, String> {
+        let (first, _, _) = match state.builtins.get(self.first.as_str()) {
+            Some(term) => term,
+            None => match state.variables.get(&self.first) {
+                Some(term) => term,
+                None => return Err(format!("variable '{}' not found", self.first)),
+            }
+        }.resolve_vars(&state.builtins, &state.variables);
+        let (second, _, _) = match state.builtins.get(self.second.as_str()) {
+            Some(term) => term,
+            None => match state.variables.get(&self.second) {
+                Some(term) => term,
+                None => return Err(format!("variable '{}' not found", self.second)),
+            }
+        }.resolve_vars(&state.builtins, &state.variables);
+        return Ok(format!("{}", first == second));
+    }
+
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
+        let msg = "command takes exactly two arguments";
+        let (rest, first) = with_err(match_variable_name(s), s, msg.to_owned())?;
+        let (rest, _) = with_err(space1(rest), rest, msg.to_owned())?;
+        let (rest, second) = with_err(match_variable_name(rest), rest, msg.to_owned())?;
+        let (rest, _) = with_err(space0(rest), rest, msg.to_owned())?;
+        let (rest, _) = with_err(eof(rest), rest, msg.to_owned())?;
+        return Ok((rest, Box::new(AlphaEqCommand { first: (*first).to_owned(), second: (*second).to_owned() })));
+    }
+
+    fn keyword() -> &'static str {
+        return "eq";
+    }
+}
+
 
 impl Command for BuiltinsCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
@@ -92,18 +133,21 @@ impl Command for DeBruijnCommand {
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
-        match &self.term {
-            Some(term) => Ok(term.to_debrujin().to_string()),
+        let tree = match &self.term {
+            Some(term) => term,
             None => if let Some(hist_entry) = state.last_lambda() {
                 if let LineType::Lambda(tree) = &hist_entry.parsed {
-                    Ok(tree.to_debrujin().to_string())
+                    tree
                 } else {
                     panic!("last_lambda() didn't return lambda entry");
                 }
             } else {
                 return Err("no history entry found".to_owned());
             }
-        }
+        };
+
+        let (tree, _, _) = tree.resolve_vars(&state.builtins, &state.variables);
+        return Ok(tree.to_debrujin().to_string());
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
@@ -366,6 +410,7 @@ pub fn match_command(s: Span) -> IResult<Box<dyn Command>> {
     let (rest, _) = space0(rest)?;
 
     let command_matchers = (
+        AlphaEqCommand::match_command,
         BuiltinsCommand::match_command,
         DeBruijnCommand::match_command,
         EchoCommand::match_command,

@@ -64,31 +64,8 @@ fn handle_command(state: &mut State, input: String, command: Box<dyn Command>) -
     return hist_entry;
 }
 
-fn replace_builtins_and_variables(state: &State, tree: &LambdaNode) -> (LambdaNode, u32, u32) {
-    let mut var_subs = 0;
-    let variables_borrowed = state.variables.iter().map(|(k, v)| (k.as_str(), v)).collect();
-    let mut new_tree = tree.clone();
-    loop {
-        let (t, vs) = new_tree.substitute(&variables_borrowed);
-        if vs == 0 { break; }
-        new_tree = t;
-        var_subs += vs;
-    }
-
-    let mut bi_subs = 0;
-    let builtins_borrowed = state.builtins.iter().map(|(k, v)| (*k, v)).collect();
-    loop {
-        let (t, bs) = new_tree.substitute(&builtins_borrowed);
-        if bs == 0 { break; }
-        new_tree = t;
-        bi_subs += bs;
-    }
-
-    return (new_tree, bi_subs, var_subs);
-}
-
 fn handle_lambda(state: &State, input: String, tree: LambdaNode) -> HistoryEntry {
-    let (tree, bsubs, vsubs) = replace_builtins_and_variables(state, &tree);
+    let (tree, bsubs, vsubs) = tree.resolve_vars(&state.builtins, &state.variables);
     let result = match state.config.mode {
         Mode::Normalize => normalize(&tree, state.config.strategy),
         Mode::Reduce => reduce(&tree, state.config.strategy),

@@ -8,14 +8,14 @@ use nom::{
 use crate::parsing::*;
 
 
-#[derive(Debug,Clone,PartialEq)]
+#[derive(Debug,Clone)]
 pub enum LambdaNode {
     Variable(String), // variable name
     Abstraction(String, Box<LambdaNode>), // variable name, term
     Application(Box<LambdaNode>, Box<LambdaNode>),
 }
 
-#[derive(Debug,Clone,PartialEq)]
+#[derive(Debug,Clone,Eq,PartialEq)]
 pub enum DeBruijnNode {
     BoundVariable(u32), // binder
     FreeVariable(String), // variable name
@@ -281,6 +281,30 @@ impl LambdaNode {
         }
     }
 
+    pub fn resolve_vars(&self, builtins: &HashMap<&str, LambdaNode>, variables: &HashMap<String, LambdaNode>)
+            -> (LambdaNode, u32, u32) {
+        let mut var_subs = 0;
+        let variables_borrowed = variables.iter().map(|(k, v)| (k.as_str(), v)).collect();
+        let mut tree = self.clone();
+        loop {
+            let (t, vs) = tree.substitute(&variables_borrowed);
+            if vs == 0 { break; }
+            tree = t;
+            var_subs += vs;
+        }
+
+        let mut bi_subs = 0;
+        let builtins_borrowed = builtins.iter().map(|(k, v)| (*k, v)).collect();
+        loop {
+            let (t, bs) = tree.substitute(&builtins_borrowed);
+            if bs == 0 { break; }
+            tree = t;
+            bi_subs += bs;
+        }
+
+        return (tree, bi_subs, var_subs);
+    }
+
     pub fn substitute(&self, sigma: &HashMap<&str, &LambdaNode>) -> (LambdaNode, u32) {
         let (a, b) = match self {
             LambdaNode::Variable(name) => apply_substitution(name.as_str(), sigma),
@@ -369,7 +393,6 @@ impl LambdaNode {
         }
     }
 
-
     pub fn substitute_var(&self, var_name: &str, replacement: &LambdaNode) -> (LambdaNode, u32) {
         let mut sigma = HashMap::new();
         sigma.insert(var_name, replacement);
@@ -423,6 +446,13 @@ impl ReductionLambdaNode {
         }
     }
 }
+
+impl PartialEq for LambdaNode {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_debrujin() == other.to_debrujin()
+    }
+}
+
 
 pub fn match_assignment(s: Span) -> IResult<(String, LambdaNode)> {
     let (rest, name) = map(match_variable_name, |s| s.to_owned())(s)?;
