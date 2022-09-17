@@ -330,7 +330,7 @@ impl LambdaNode {
             },
             LambdaNode::Abstraction(var_name, inner) => {
                 let next_index = match map.values().max() {
-                    Some(ui) => *ui,
+                    Some(ui) => *ui + 1,
                     None => 1,
                 };
                 map.insert(var_name, next_index);
