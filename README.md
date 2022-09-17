@@ -14,9 +14,11 @@ It is not fully tested yet, but you can help with that :).
 * commands for processing lambda terms
 
 ## Commands
+* `:alpha <name1> <name2>`: checks if the terms are alpha equivalent
 * `:builtins` list builtin terms
 * `:debruijn [term]`: print DeBruijn index form of the (last) term
 * `:echo <msg>`: output message to stdout
+* `:eq <name1> <name2>`: checks if the terms normal forms are alpha equivalent
 * `:hist` show history
 * `:info`: get useful information on the last evaluated lambda expression
 * `:normal <term>` normalize term

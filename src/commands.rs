@@ -31,6 +31,9 @@ struct HistoryCommand;
 #[derive(Clone,Debug,Default)]
 struct InfoCommand;
 
+#[derive(Clone,Debug,Default)]
+struct NormalEqCommand { first: String, second: String }
+
 #[derive(Clone,Debug)]
 struct NormalizeCommand { term: LambdaNode }
 
@@ -103,7 +106,7 @@ impl Command for AlphaEqCommand {
     }
 
     fn keyword() -> &'static str {
-        return "eq";
+        return "alpha";
     }
 }
 
@@ -230,6 +233,46 @@ variable substitutions: {}",
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         return match_no_arguments::<Self>()(s);
+    }
+}
+
+impl Command for NormalEqCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> Result<String, String> {
+        let (first, _, _) = match state.builtins.get(self.first.as_str()) {
+            Some(term) => term,
+            None => match state.variables.get(&self.first) {
+                Some(term) => term,
+                None => return Err(format!("variable '{}' not found", self.first)),
+            }
+        }.resolve_vars(&state.builtins, &state.variables);
+        let (second, _, _) = match state.builtins.get(self.second.as_str()) {
+            Some(term) => term,
+            None => match state.variables.get(&self.second) {
+                Some(term) => term,
+                None => return Err(format!("variable '{}' not found", self.second)),
+            }
+        }.resolve_vars(&state.builtins, &state.variables);
+        let (first, _) = first.normalize(state.config.strategy);
+        let (second, _) = second.normalize(state.config.strategy);
+        return Ok(format!("{}", first == second));
+    }
+
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
+        let msg = "command takes exactly two arguments";
+        let (rest, first) = with_err(match_variable_name(s), s, msg.to_owned())?;
+        let (rest, _) = with_err(space1(rest), rest, msg.to_owned())?;
+        let (rest, second) = with_err(match_variable_name(rest), rest, msg.to_owned())?;
+        let (rest, _) = with_err(space0(rest), rest, msg.to_owned())?;
+        let (rest, _) = with_err(eof(rest), rest, msg.to_owned())?;
+        return Ok((rest, Box::new(NormalEqCommand { first: (*first).to_owned(), second: (*second).to_owned() })));
+    }
+
+    fn keyword() -> &'static str {
+        return "eq";
     }
 }
 
@@ -416,6 +459,7 @@ pub fn match_command(s: Span) -> IResult<Box<dyn Command>> {
         EchoCommand::match_command,
         HistoryCommand::match_command,
         InfoCommand::match_command,
+        NormalEqCommand::match_command,
         NormalizeCommand::match_command,
         PrintCommand::match_command,
         ReduceCommand::match_command,
