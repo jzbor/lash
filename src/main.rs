@@ -58,7 +58,9 @@ fn handle_command(state: &mut State, input: String, command: Box<dyn Command>) -
         },
     };
 
-    println!("{}", output);
+    if output != "" {
+        println!("{}", output);
+    }
     hist_entry.input = input;
     hist_entry.output = output;
     return hist_entry;

@@ -20,6 +20,9 @@ struct AlphaEqCommand { first: String, second: String }
 struct BuiltinsCommand;
 
 #[derive(Clone,Debug,Default)]
+struct CommentCommand { comment: String }
+
+#[derive(Clone,Debug,Default)]
 struct DeBruijnCommand { term: Option<LambdaNode> }
 
 #[derive(Clone,Debug,Default)]
@@ -127,6 +130,25 @@ impl Command for BuiltinsCommand {
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         return match_no_arguments::<Self>()(s);
+    }
+}
+
+impl Command for CommentCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, _state: &mut State) -> Result<String, String> {
+        return Ok("".to_owned());
+    }
+
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
+        let (rest, output) = combinator::rest(s)?;
+        return Ok((rest, Box::new(CommentCommand { comment: (*output).to_owned() })));
+    }
+
+    fn keyword() -> &'static str {
+        return ":";
     }
 }
 
@@ -455,6 +477,7 @@ pub fn match_command(s: Span) -> IResult<Box<dyn Command>> {
     let command_matchers = (
         AlphaEqCommand::match_command,
         BuiltinsCommand::match_command,
+        CommentCommand::match_command,
         DeBruijnCommand::match_command,
         EchoCommand::match_command,
         HistoryCommand::match_command,

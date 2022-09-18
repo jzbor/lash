@@ -14,6 +14,7 @@ It is not fully tested yet, but you can help with that :).
 * commands for processing lambda terms
 
 ## Commands
+* `:: <comment>`: comment (gets ignored)
 * `:alpha <name1> <name2>`: checks if the terms are alpha equivalent
 * `:builtins` list builtin terms
 * `:debruijn [term]`: print DeBruijn index form of the (last) term
