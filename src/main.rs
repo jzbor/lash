@@ -203,7 +203,6 @@ fn file(state: &mut State, filename: &str) {
             println!("A fatal error occurred while parsing '{}'", filename);
             break;
         }
-        println!();
     }
 }
 
@@ -247,5 +246,4 @@ fn main() {
         },
         None => repl(&mut state),
     }
-    println!();
 }

@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use core::fmt::Debug;
 use nom::{
     branch::*,
@@ -11,6 +13,7 @@ use nom::{
 use crate::state::*;
 use crate::lambda::*;
 use crate::parsing::*;
+use crate::parse_line;
 
 
 #[derive(Clone,Debug,Default)]
@@ -45,6 +48,9 @@ struct PrintCommand { var: String }
 
 #[derive(Clone,Debug)]
 struct ReduceCommand { term: LambdaNode }
+
+#[derive(Clone,Debug,Default)]
+struct SourceCommand { filename: String }
 
 #[derive(Clone,Debug,Default)]
 struct StepsCommand;
@@ -371,6 +377,48 @@ impl Command for ReduceCommand {
     }
 }
 
+impl Command for SourceCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> Result<String, String> {
+        let file = match File::open(&self.filename) {
+            Ok(f) => f,
+            Err(e) => return Err(format!("Unable to open file ({})", e.to_string())),
+        };
+        let mut reader = BufReader::new(file);
+
+        loop {
+            let mut line = String::new();
+            match reader.read_line(&mut line) {
+                Ok(n) => if n == 0 {
+                    return Ok("".to_owned());
+                },
+                Err(e) => {
+                    return Err(format!("Fatal IO Error: {}", e.to_string()));
+                },
+            }
+
+            let line = line.trim().to_owned();
+
+            let result = parse_line(line, state);
+            if let Err(_) = result {
+                return Err(format!("A fatal error occurred while parsing '{}'", self.filename));
+            }
+        }
+    }
+
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
+        let (rest, output) = combinator::rest(s)?;
+        return Ok((rest, Box::new(SourceCommand { filename: (*output).to_owned() })));
+    }
+
+    fn keyword() -> &'static str {
+        return "source";
+    }
+}
+
 impl Command for StepsCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
         return Box::new(self.clone());
@@ -486,6 +534,7 @@ pub fn match_command(s: Span) -> IResult<Box<dyn Command>> {
         NormalizeCommand::match_command,
         PrintCommand::match_command,
         ReduceCommand::match_command,
+        SourceCommand::match_command,
         StepsCommand::match_command,
         StoreCommand::match_command,
         VariablesCommand::match_command,
