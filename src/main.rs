@@ -214,7 +214,13 @@ fn repl(state: &mut State) {
     let mut rl = Editor::<()>::new().unwrap();
 
     loop {
-        let line = rl.readline("[λ] ");
+        let prompt = match state.config.mode {
+            Mode::Normalize => "[N] ",
+            Mode::Reduce => "[R] ",
+            Mode::Validate => "[λ] ",
+        };
+
+        let line = rl.readline(prompt);
         match line {
             Ok(input) => {
                 rl.add_history_entry(input.as_str());
