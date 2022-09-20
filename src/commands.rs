@@ -43,11 +43,17 @@ struct NormalEqCommand { first: String, second: String }
 #[derive(Clone,Debug)]
 struct NormalizeCommand { term: LambdaNode }
 
+#[derive(Clone, Debug)]
+struct NormalizeVariableCommand { var: String }
+
 #[derive(Clone,Debug,Default)]
 struct PrintCommand { var: String }
 
 #[derive(Clone,Debug)]
 struct ReduceCommand { term: LambdaNode }
+
+#[derive(Clone,Debug)]
+struct ReduceVariableCommand { var: String }
 
 #[derive(Clone,Debug,Default)]
 struct SourceCommand { filename: String }
@@ -310,7 +316,8 @@ impl Command for NormalizeCommand {
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
-        let (normal, nbeta) = self.term.normalize(state.config.strategy);
+        let (term, _, _) = self.term.resolve_vars(&state.builtins, &state.variables);
+        let (normal, nbeta) = term.normalize(state.config.strategy);
         return Ok(format!("Normal form: {}\nBeta reductions: {}", normal.to_string(), nbeta));
     }
 
@@ -321,6 +328,38 @@ impl Command for NormalizeCommand {
 
     fn keyword() -> &'static str {
         return "normal";
+    }
+}
+
+impl Command for NormalizeVariableCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> Result<String, String> {
+        match state.builtins.get(self.var.as_str()) {
+            Some(_term) => Err(format!("Cannot normalize builtins")),
+            None => match state.variables.get(&self.var) {
+                Some(term) => {
+                    let (normal, nbeta) = term.normalize(state.config.strategy);
+                    state.variables.insert(self.var.clone(), normal);
+                    Ok(format!("Normalized variable '{}'\nBeta reductions: {}", self.var, nbeta))
+                },
+                None => Err(format!("variable '{}' not found", self.var)),
+            },
+        }
+    }
+
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
+        let msg = "command takes exactly one argument";
+        let (rest, var) = with_err(match_variable_name(s), s, msg.to_owned())?;
+        let (rest, _) = with_err(space0(rest), rest, msg.to_owned())?;
+        let (rest, _) = with_err(eof(rest), rest, msg.to_owned())?;
+        return Ok((rest, Box::new(NormalizeVariableCommand { var: (*var).to_owned() })));
+    }
+
+    fn keyword() -> &'static str {
+        return "normalize";
     }
 }
 
@@ -358,9 +397,10 @@ impl Command for ReduceCommand {
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
-        match self.term.next_redex(state.config.strategy) {
+        let (term, _, _) = self.term.resolve_vars(&state.builtins, &state.variables);
+        match term.next_redex(state.config.strategy) {
             Some((redex, _depth)) => {
-                let reduced = self.term.reduce(state.config.strategy);
+                let reduced = term.reduce(state.config.strategy);
                 return Ok(format!("Redex: {}\n => {}", redex.to_string(), reduced.to_string()));
             },
             None => return Ok("This term already has normal form".to_owned()),
@@ -370,6 +410,42 @@ impl Command for ReduceCommand {
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         let (rest, tree) = match_complete_lambda(s)?;
         return Ok((rest, Box::new(ReduceCommand { term: tree })));
+    }
+
+    fn keyword() -> &'static str {
+        return "reduced";
+    }
+}
+
+impl Command for ReduceVariableCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> Result<String, String> {
+        match state.builtins.get(self.var.as_str()) {
+            Some(_term) => Err(format!("Cannot normalize builtins")),
+            None => match state.variables.get(&self.var) {
+                Some(term) => match term.next_redex(state.config.strategy) {
+                    Some((redex, _depth)) => {
+                        let reduced = term.reduce(state.config.strategy);
+                        state.variables.insert(self.var.clone(), reduced.clone());
+                        Ok(format!("Reduced variable '{}' to {}\nRedex: {}",
+                                   self.var, reduced.to_string(), redex.to_string()))
+                    },
+                    None => Ok("This term already has normal form".to_owned()),
+                },
+                None => Err(format!("variable '{}' not found", self.var)),
+            },
+        }
+    }
+
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
+        let msg = "command takes exactly one argument";
+        let (rest, var) = with_err(match_variable_name(s), s, msg.to_owned())?;
+        let (rest, _) = with_err(space0(rest), rest, msg.to_owned())?;
+        let (rest, _) = with_err(eof(rest), rest, msg.to_owned())?;
+        return Ok((rest, Box::new(ReduceVariableCommand { var: (*var).to_owned() })));
     }
 
     fn keyword() -> &'static str {
@@ -535,8 +611,10 @@ pub fn match_command(s: Span) -> IResult<Box<dyn Command>> {
         InfoCommand::match_command,
         NormalEqCommand::match_command,
         NormalizeCommand::match_command,
+        NormalizeVariableCommand::match_command,
         PrintCommand::match_command,
         ReduceCommand::match_command,
+        ReduceVariableCommand::match_command,
         SourceCommand::match_command,
         StepsCommand::match_command,
         StoreCommand::match_command,

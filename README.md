@@ -23,8 +23,10 @@ It is not fully tested yet, but you can help with that :).
 * `:hist` show history
 * `:info`: get useful information on the last evaluated lambda expression
 * `:normal <term>` normalize term
+* `:normalize <variable>` normalize variable (store result)
 * `:print <name>`: print assigned value for variable or builtin
-* `:reduce <term>` perform one reduction on term
+* `:reduced <term>` perform one reduction on term
+* `:reduce <variable>` perform one reduction on variable (store result)
 * `:steps` print reduction steps of last term
 * `:store <name>` store last term into a variable
 * `:vars` list variables
