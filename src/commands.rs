@@ -13,7 +13,7 @@ use nom::{
 use crate::state::*;
 use crate::lambda::*;
 use crate::parsing::*;
-use crate::parse_line;
+use crate::process_line;
 
 
 #[derive(Clone,Debug,Default)]
@@ -402,7 +402,10 @@ impl Command for SourceCommand {
 
             let line = line.trim().to_owned();
 
-            let result = parse_line(line, state);
+            let (result, eof) = process_line(line, state);
+            if eof {
+                return Ok("".to_owned());
+            }
             if let Err(_) = result {
                 return Err(format!("A fatal error occurred while parsing '{}'", self.filename));
             }
