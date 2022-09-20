@@ -101,7 +101,7 @@ pub fn match_complete_lambda(s: Span) -> IResult<LambdaNode> {
 
 // @TODO remove pub
 pub fn match_lambda_sign(s: Span) -> IResult<Span> {
-    return recognize(char('\\'))(s);
+    return recognize(alt((char('\\'), char('λ'))))(s);
 }
 
 pub fn match_variable_name<'a>(s: Span<'a>) -> IResult<&'a str> {

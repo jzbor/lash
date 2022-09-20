@@ -36,12 +36,13 @@ command     := :keyword args
 assignment  := variable-name = lambda
 variable    := [a-zA-Z0-9_'-]*
 numeral     := $[1-9][0-9]*
+lambda-sign := '\' | 'λ'
 ```
 
 ### Lambda Syntax
 ```
 lambda      := abstraction | application
-abstraction := \variable-list . lambda
+abstraction := lambda-sign variable-list . lambda
 application := group group*
 group       := variable | numeral | (lambda)
 ```
