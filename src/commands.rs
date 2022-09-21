@@ -14,6 +14,7 @@ use crate::state::*;
 use crate::lambda::*;
 use crate::parsing::*;
 use crate::process_line;
+use crate::Mode;
 
 
 #[derive(Clone,Debug,Default)]
@@ -36,6 +37,9 @@ struct HistoryCommand;
 
 #[derive(Clone,Debug,Default)]
 struct InfoCommand;
+
+#[derive(Clone,Debug,Default)]
+struct ModeCommand { mode: Mode }
 
 #[derive(Clone,Debug,Default)]
 struct NormalEqCommand { first: String, second: String }
@@ -270,6 +274,43 @@ variable substitutions: {}",
     }
 }
 
+impl Command for ModeCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> Result<String, String> {
+        if !state.interactive {
+            return Err("this setting can only be changed in interactive shells".to_owned());
+        }
+
+        state.config.mode = self.mode;
+
+        return Ok("Changed mode".to_owned());
+    }
+
+    fn keyword() -> &'static str {
+        return "mode";
+    }
+
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
+        let (rest, mode_str) = with_err(recognize(
+                                            alt((
+                                                tag("normalize"),
+                                                tag("reduce"),
+                                                tag("validate"),
+                                            ))
+                                        )(s), s, "unknown mode".to_owned())?;
+        let mode = match *mode_str {
+            "normalize" => Mode::Normalize,
+            "reduce" => Mode::Reduce,
+            "validate" => Mode::Validate,
+            &_ => return Err(nom::Err::Error(ParseError::new("unknown mode".to_owned(), rest))),
+        };
+        return Ok((rest, Box::new(ModeCommand { mode: mode })));
+    }
+}
+
 impl Command for NormalEqCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
         return Box::new(self.clone());
@@ -464,28 +505,37 @@ impl Command for SourceCommand {
             Err(e) => return Err(format!("Unable to open file ({})", e.to_string())),
         };
         let mut reader = BufReader::new(file);
+        let interactive = state.interactive;
+        state.interactive = false;
+        let mut result = Ok("".to_owned());
 
         loop {
             let mut line = String::new();
             match reader.read_line(&mut line) {
                 Ok(n) => if n == 0 {
-                    return Ok("".to_owned());
+                    // @TODO redundant? process_line() has eof flag
+                    break;
                 },
                 Err(e) => {
-                    return Err(format!("Fatal IO Error: {}", e.to_string()));
+                    result = Err(format!("Fatal IO Error: {}", e.to_string()));
+                    break;
                 },
             }
 
             let line = line.trim().to_owned();
 
-            let (result, eof) = process_line(line, state);
+            let (answer, eof) = process_line(line, state);
             if eof {
-                return Ok("".to_owned());
+                break;
             }
-            if let Err(_) = result {
-                return Err(format!("A fatal error occurred while parsing '{}'", self.filename));
+            if let Err(_) = answer {
+                result = Err(format!("A fatal error occurred while parsing '{}'", self.filename));
+                break;
             }
         }
+
+        state.interactive = interactive;
+        return result;
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
@@ -609,6 +659,7 @@ pub fn match_command(s: Span) -> IResult<Box<dyn Command>> {
         EchoCommand::match_command,
         HistoryCommand::match_command,
         InfoCommand::match_command,
+        ModeCommand::match_command,
         NormalEqCommand::match_command,
         NormalizeCommand::match_command,
         NormalizeVariableCommand::match_command,

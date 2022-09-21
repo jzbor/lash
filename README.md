@@ -22,6 +22,7 @@ It is not fully tested yet, but you can help with that :).
 * `:eq <name1> <name2>`: checks if the terms normal forms are alpha equivalent
 * `:hist` show history
 * `:info`: get useful information on the last evaluated lambda expression
+* `:mode <normalize | reduce | validate>`: switch mode
 * `:normal <term>` normalize term
 * `:normalize <variable>` normalize variable (store result)
 * `:print <name>`: print assigned value for variable or builtin

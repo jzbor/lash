@@ -176,6 +176,7 @@ fn reduce(tree: &LambdaNode, strategy: ReductionStrategy) -> Result<(LambdaNode,
 fn file(state: &mut State, filename: &str) {
     let file = File::open(filename).expect("Unable to open file");
     let mut reader = BufReader::new(file);
+    state.interactive = false;
 
     loop {
         let mut line = String::new();
@@ -212,6 +213,7 @@ fn file(state: &mut State, filename: &str) {
 
 fn repl(state: &mut State) {
     let mut rl = Editor::<()>::new().unwrap();
+    state.interactive = true;
 
     loop {
         let prompt = match state.config.mode {

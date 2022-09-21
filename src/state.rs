@@ -54,6 +54,7 @@ pub struct State {
     pub config: Config,
     pub builtins: HashMap<&'static str, LambdaNode>,
     pub variables: HashMap<String, LambdaNode>,
+    pub interactive: bool,
 }
 
 impl State {
@@ -64,6 +65,7 @@ impl State {
             config: config,
             builtins: builtins,
             variables: HashMap::new(),
+            interactive: true,
         }
     }
 
