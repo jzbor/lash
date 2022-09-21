@@ -45,7 +45,7 @@ struct ModeCommand { mode: Mode }
 struct NormalEqCommand { first: String, second: String }
 
 #[derive(Clone,Debug)]
-struct NormalizeCommand { term: LambdaNode }
+struct NormalizeCommand { term: Option<LambdaNode> }
 
 #[derive(Clone, Debug)]
 struct NormalizeVariableCommand { var: String }
@@ -54,7 +54,7 @@ struct NormalizeVariableCommand { var: String }
 struct PrintCommand { var: String }
 
 #[derive(Clone,Debug)]
-struct ReduceCommand { term: LambdaNode }
+struct ReduceCommand { term: Option<LambdaNode> }
 
 #[derive(Clone,Debug)]
 struct ReduceVariableCommand { var: String }
@@ -177,19 +177,7 @@ impl Command for DeBruijnCommand {
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
-        let tree = match &self.term {
-            Some(term) => term,
-            None => if let Some(hist_entry) = state.last_lambda() {
-                if let LineType::Lambda(tree) = &hist_entry.parsed {
-                    tree
-                } else {
-                    panic!("last_lambda() didn't return lambda entry");
-                }
-            } else {
-                return Err("no history entry found".to_owned());
-            }
-        };
-
+        let tree = term_or_last_lambda(&self.term, state)?;
         let (tree, _, _) = tree.resolve_vars(&state.builtins, &state.variables);
         return Ok(tree.to_debrujin().to_string());
     }
@@ -360,14 +348,20 @@ impl Command for NormalizeCommand {
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
-        let (term, _, _) = self.term.resolve_vars(&state.builtins, &state.variables);
+        let term = term_or_last_lambda(&self.term, state)?;
+        let (term, _, _) = term.resolve_vars(&state.builtins, &state.variables);
         let (normal, nbeta) = term.normalize(state.config.strategy);
         return Ok(format!("Normal form: {}\nBeta reductions: {}", normal.to_string(), nbeta));
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
-        let (rest, tree) = match_complete_lambda(s)?;
-        return Ok((rest, Box::new(NormalizeCommand { term: tree })));
+        let (rest, _) = space0(s)?;
+        if eof::<Span,()>(s).is_ok() {
+            return Ok((rest, Box::new(NormalizeCommand { term: None })));
+        } else {
+            let (rest, tree) = match_complete_lambda(s)?;
+            return Ok((rest, Box::new(NormalizeCommand { term: Some(tree) })));
+        }
     }
 
     fn keyword() -> &'static str {
@@ -395,7 +389,7 @@ impl Command for NormalizeVariableCommand {
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
-        let msg = "command takes exactly one argument";
+        let msg = "command takes exactly one variable name as argument";
         let (rest, var) = with_err(match_variable_name(s), s, msg.to_owned())?;
         let (rest, _) = with_err(space0(rest), rest, msg.to_owned())?;
         let (rest, _) = with_err(eof(rest), rest, msg.to_owned())?;
@@ -441,7 +435,8 @@ impl Command for ReduceCommand {
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
-        let (term, _, _) = self.term.resolve_vars(&state.builtins, &state.variables);
+        let term = term_or_last_lambda(&self.term, state)?;
+        let (term, _, _) = term.resolve_vars(&state.builtins, &state.variables);
         match term.next_redex(state.config.strategy) {
             Some((redex, _depth)) => {
                 let reduced = term.reduce(state.config.strategy);
@@ -452,8 +447,13 @@ impl Command for ReduceCommand {
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
-        let (rest, tree) = match_complete_lambda(s)?;
-        return Ok((rest, Box::new(ReduceCommand { term: tree })));
+        let (rest, _) = space0(s)?;
+        if eof::<Span,()>(s).is_ok() {
+            return Ok((rest, Box::new(ReduceCommand { term: None })));
+        } else {
+            let (rest, tree) = match_complete_lambda(s)?;
+            return Ok((rest, Box::new(ReduceCommand { term: Some(tree) })));
+        }
     }
 
     fn keyword() -> &'static str {
@@ -485,7 +485,7 @@ impl Command for ReduceVariableCommand {
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
-        let msg = "command takes exactly one argument";
+        let msg = "command takes exactly one variable name as argument";
         let (rest, var) = with_err(match_variable_name(s), s, msg.to_owned())?;
         let (rest, _) = with_err(space0(rest), rest, msg.to_owned())?;
         let (rest, _) = with_err(eof(rest), rest, msg.to_owned())?;
@@ -682,6 +682,21 @@ fn match_no_arguments<T>() -> impl FnMut(Span) -> IResult<Box<dyn Command>>
         Ok((s, default))
             .conclude(|_| format!("command '{}' does not take any arguments", T::keyword()))
     };
+}
+
+fn term_or_last_lambda(optional: &Option<LambdaNode>, state: &State) -> Result<LambdaNode, String> {
+    match optional {
+        Some(term) => Ok(term.clone()),
+        None => if let Some(hist_entry) = state.last_lambda() {
+            if let LineType::Lambda(term) = &hist_entry.parsed {
+                Ok(term.clone())
+            } else {
+                panic!("last_lambda() didn't return lambda entry");
+            }
+        } else {
+            Err("no history entry found".to_owned())
+        }
+    }
 }
 
 
