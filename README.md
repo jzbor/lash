@@ -30,6 +30,7 @@ It is not fully tested yet, but you can help with that :).
 * `:reduce <variable>` perform one reduction on variable (store result)
 * `:steps` print reduction steps of last term
 * `:store <name>` store last term into a variable
+* `:strategy <normal | applicative>`: switch reduction strategy
 * `:vars` list variables
 
 ## Syntax

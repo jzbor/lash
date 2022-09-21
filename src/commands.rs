@@ -69,6 +69,9 @@ struct StepsCommand;
 struct StoreCommand { name: String }
 
 #[derive(Clone,Debug,Default)]
+struct StrategyCommand { strategy: ReductionStrategy }
+
+#[derive(Clone,Debug,Default)]
 struct VariablesCommand;
 
 
@@ -618,6 +621,41 @@ impl Command for StoreCommand {
     }
 }
 
+impl Command for StrategyCommand {
+    fn clone_to_box(&self) -> Box<dyn Command> {
+        return Box::new(self.clone());
+    }
+
+    fn execute(&self, state: &mut State) -> Result<String, String> {
+        if !state.interactive {
+            return Err("this setting can only be changed in interactive shells".to_owned());
+        }
+
+        state.config.strategy = self.strategy;
+
+        return Ok("Changed strategy".to_owned());
+    }
+
+    fn keyword() -> &'static str {
+        return "strategy";
+    }
+
+    fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
+        let (rest, strategy_str) = with_err(recognize(
+                                            alt((
+                                                tag("normal"),
+                                                tag("applicative"),
+                                            ))
+                                        )(s), s, "unknown strategy".to_owned())?;
+        let strategy = match *strategy_str {
+            "normal" => ReductionStrategy::Normal,
+            "applicative" => ReductionStrategy::Applicative,
+            &_ => return Err(nom::Err::Error(ParseError::new("unknown strategy".to_owned(), rest))),
+        };
+        return Ok((rest, Box::new(StrategyCommand { strategy: strategy })));
+    }
+}
+
 impl Command for VariablesCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
         return Box::new(self.clone());
@@ -669,6 +707,7 @@ pub fn match_command(s: Span) -> IResult<Box<dyn Command>> {
         SourceCommand::match_command,
         StepsCommand::match_command,
         StoreCommand::match_command,
+        StrategyCommand::match_command,
         VariablesCommand::match_command,
     );
 
