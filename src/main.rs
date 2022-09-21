@@ -26,7 +26,7 @@ mod parsing;
 #[derive(Debug,Copy,Clone,Default,clap::ArgEnum)]
 pub enum Mode {
     #[default]
-    Normalize, Reduce, Validate,
+    Validate, Normalize, Reduce,
 }
 
 fn handle_assignment(state: &mut State, input: String, name: String, term: LambdaNode) -> (Result<String, String>, HistoryEntry) {
