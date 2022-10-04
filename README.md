@@ -13,6 +13,35 @@ It is not fully tested yet, but you can help with that :).
 * church numerals
 * commands for processing lambda terms
 
+## Example
+```
+[λ] CONS
+\h . \t . \c . \n . c h (t c n)
+
+[λ] list = CONS $2 (CONS $3 (CONS $1 NIL))
+[λ] list
+(\h . \t . \c . \n . c h (t c n)) (\f . \x . f (f x)) ((\h . \t . \c . \n . c h (t c n)) (\f . \x . f (f (f x))) ((\h . \t . \c . \n . c h (t c n)) (\f . \x . f x) (\c . \n . n)))
+
+[λ] :mode normalize
+Changed mode
+
+[N] list
+\c . \n . c (\f . \x . f (f x)) (c (\f . \x . f (f (f x))) (c (\f . \x . f x) n))
+
+[N] result1 = list ADD $0
+[N] result1
+\f . \x . f (f (f (f (f (f x)))))
+
+[N] ADD $2 $4
+\f . \x . f (f (f (f (f (f x)))))
+
+[N] :store result2
+Added variable mapping for 'result2'
+
+[N] :eq result1 result2
+true
+```
+
 ## Commands
 * `:: <comment>`: comment (gets ignored)
 * `:alpha <name1> <name2>`: checks if the terms are alpha equivalent
