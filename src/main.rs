@@ -32,7 +32,8 @@ pub enum Mode {
 fn handle_assignment(state: &mut State, input: String, name: String, term: LambdaNode) -> (Result<String, String>, HistoryEntry) {
     let mut hist_entry = HistoryEntry::default();
     hist_entry.input = input;
-    let result = match state.add_variable(name.clone(), term.clone()) {
+    let term = term.resolve_vars(&state.builtins, &state.variables).0;
+    let result = match state.add_variable(name.clone(), term) {
         Ok(term) => {
             hist_entry.parsed = LineType::Assignment(name, term);
             Ok("".to_owned())
