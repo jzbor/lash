@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use nom;
+
 use nom::{
     branch::*,
     bytes::complete::*,
@@ -28,7 +28,7 @@ pub trait Conclude<'a, O> {
 
 impl<'a> ParseError<'a> {
     pub fn new(message: String, span: Span<'a>) -> Self {
-        Self { span, message: message }
+        Self { span, message }
     }
 
     pub fn line(&self) -> u32 {
@@ -40,11 +40,11 @@ impl<'a> ParseError<'a> {
     }
 
     pub fn span(&self) -> &Span {
-        return &self.span;
+        &self.span
     }
 
     pub fn message(&self) -> String {
-        return self.message.clone();
+        self.message.clone()
     }
 }
 
@@ -55,7 +55,7 @@ impl<'a, O> Conclude<'a, O> for IResult<'a, O> {
                 let (rest, _) = space0(rest)?;
 
                 if eof::<&str, ()>(*rest).is_ok() {
-                    return Ok((rest, result));
+                    Ok((rest, result))
                 } else {
                     return Err(nom::Err::Error(ParseError::new(msg(*rest), rest)));
                 }
@@ -79,7 +79,8 @@ impl<'a> nom::error::ParseError<Span<'a>> for ParseError<'a> {
     }
 
     fn or(self, other: Self) -> Self {
-        let chosen = if self.line() == other.line() {
+        
+        if self.line() == other.line() {
             if self.offset() > other.offset() {
                 self
             } else {
@@ -89,8 +90,7 @@ impl<'a> nom::error::ParseError<Span<'a>> for ParseError<'a> {
             self
         } else {
             other
-        };
-        return chosen;
+        }
     }
 }
 
@@ -101,22 +101,22 @@ pub fn match_complete_lambda(s: Span) -> IResult<LambdaNode> {
 
 // @TODO remove pub
 pub fn match_lambda_sign(s: Span) -> IResult<Span> {
-    return recognize(alt((char('\\'), char('λ'))))(s);
+    recognize(alt((char('\\'), char('λ'))))(s)
 }
 
 pub fn match_variable_name<'a>(s: Span<'a>) -> IResult<&'a str> {
     let (rest, name) = take_while1(|x| is_alphanumeric(x as u8) || x == '-' || x == '_' || x == '\'')(s)?;
-    return Ok((rest, *name));
+    Ok((rest, *name))
 }
 
 pub fn with_err<'a, O>(result: IResult<'a, O>, s: Span<'a>, msg: String) -> IResult<'a, O> {
-    return result.map_err(|_| nom::Err::Error(ParseError::new(msg, s)));
+    result.map_err(|_| nom::Err::Error(ParseError::new(msg, s)))
 }
 
 fn match_abstraction(s: Span) -> IResult<LambdaNode> {
     let (rest, _) = match_lambda_sign(s)?;
     let (rest, _) = space0(rest)?;
-    let (rest, mut variables) = map(match_variable_list, |v| VecDeque::from(v))(rest)?;
+    let (rest, mut variables) = map(match_variable_list, VecDeque::from)(rest)?;
     let (rest, _) = space0(rest)?;
     let (rest, _) = with_err(char('.')(rest), rest,
                              "expected '.' after abstraction variables".to_owned())?;
@@ -130,13 +130,13 @@ fn match_abstraction(s: Span) -> IResult<LambdaNode> {
         current_abstraction = LambdaNode::Abstraction(variable.to_owned(), Box::new(current_abstraction));
     }
 
-    return Ok((rest, current_abstraction));
+    Ok((rest, current_abstraction))
 }
 
 fn match_application(s: Span) -> IResult<LambdaNode> {
     let (rest, terms) = separated_list1(space1, match_group)(s)?;
     let node = vec_to_application(terms);
-    return Ok((rest, node));
+    Ok((rest, node))
 }
 
 fn match_bracketed(s: Span) -> IResult<LambdaNode> {
@@ -146,21 +146,21 @@ fn match_bracketed(s: Span) -> IResult<LambdaNode> {
     let (rest, _) = space0(rest)?;
     let (rest, _) = char(')')(rest)?;
 
-    return Ok((rest, lambda));
+    Ok((rest, lambda))
 }
 
 fn match_numeral(s: Span) -> IResult<LambdaNode> {
     let (rest, _) = char('$')(s)?;
     let (rest, n) = match_u32(rest)?;
-    return Ok((rest, LambdaNode::church_numeral(n)));
+    Ok((rest, LambdaNode::church_numeral(n)))
 }
 
 fn match_group(s: Span) -> IResult<LambdaNode> {
-    return alt((match_variable, match_bracketed, match_numeral))(s);
+    alt((match_variable, match_bracketed, match_numeral))(s)
 }
 
 fn match_lambda(s: Span) -> IResult<LambdaNode> {
-    return alt((match_abstraction, match_application))(s);
+    alt((match_abstraction, match_application))(s)
 }
 
 fn match_u32(s: Span) -> IResult<u32> {
@@ -169,12 +169,12 @@ fn match_u32(s: Span) -> IResult<u32> {
         Ok(ui) => ui,
         Err(_) => return Err(nom::Err::Error(ParseError::new("unable to parse number".to_owned(), s))),
     };
-    return Ok((rest, uint));
+    Ok((rest, uint))
 }
 
 fn match_variable(s: Span) -> IResult<LambdaNode> {
     let (rest, name) = match_variable_name(s)?;
-    return Ok((rest, LambdaNode::Variable(name.to_owned())));
+    Ok((rest, LambdaNode::Variable(name.to_owned())))
 }
 
 fn match_variable_list<'a>(s: Span<'a>) -> IResult<Vec<&'a str>> {
@@ -200,11 +200,11 @@ fn match_variable_list<'a>(s: Span<'a>) -> IResult<Vec<&'a str>> {
         }
     }
 
-    return Ok((rest, variables));
+    Ok((rest, variables))
 }
 
 fn vec_to_application(mut terms: Vec<LambdaNode>) -> LambdaNode {
-    if terms.len() < 1 {
+    if terms.is_empty() {
         panic!("Invalid number of input terms for application");
     } else if terms.len() == 1 {
         return terms.pop().unwrap();

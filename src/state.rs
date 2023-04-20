@@ -60,10 +60,10 @@ pub struct State {
 impl State {
     pub fn init(config: Config) -> State {
         let builtins = get_builtins();
-        return State {
+        State {
             history: Vec::new(),
-            config: config,
-            builtins: builtins,
+            config,
+            builtins,
             variables: HashMap::new(),
             interactive: true,
         }
@@ -71,7 +71,7 @@ impl State {
 
     pub fn add_variable(&mut self, name: String, term: LambdaNode) -> Result<LambdaNode, ()> {
         if self.builtins.contains_key(name.as_str()) {
-            return Err(());
+            Err(())
         } else if let Some(tree) = self.variables.get(&name) {
             let sigma = HashMap::from([(name.as_str(), tree)]);
             let (term, _) = term.substitute(&sigma);
@@ -84,7 +84,7 @@ impl State {
     }
 
     pub fn last_lambda(&self) -> Option<&HistoryEntry> {
-        if self.history.len() > 0 {
+        if !self.history.is_empty() {
             let last_index = self.history.len() - 1;
             for i in 0..self.history.len() {
                 let entry = &self.history[last_index - i];
@@ -93,23 +93,23 @@ impl State {
                 }
             }
         }
-        return None;
+        None
     }
 }
 
 impl Default for Config {
     fn default() -> Config {
-        return Config {
+        Config {
             strategy: ReductionStrategy::Normal,
             file: None,
             mode: Mode::Normalize,
-        };
+        }
     }
 }
 
 impl Default for HistoryEntry {
     fn default() -> HistoryEntry {
-        return HistoryEntry {
+        HistoryEntry {
             input: String::new(),
             parsed: LineType::Error("Empty entry".to_string()),
             output: String::new(),
@@ -125,7 +125,7 @@ impl HistoryEntry {
         match self.parsed {
             LineType::Lambda(_) => format!("{}\n  => {}", self.input, self.output),
             LineType::Error(_) => format!("{} [{}]", self.input, self.output),
-            _ => format!("{}", self.input),
+            _ => self.input.to_string(),
         }
     }
 }

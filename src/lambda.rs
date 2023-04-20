@@ -46,16 +46,16 @@ impl DeBruijnNode {
             DeBruijnNode::Application(term1, term2)
                 => {
                     let s1 = if let DeBruijnNode::FreeVariable(name) = &**term1 {
-                        format!("{}", name)
+                        name.to_string()
                     } else if let DeBruijnNode::BoundVariable(i) = &**term1 {
                         format!("{}", i)
                     } else if let DeBruijnNode::Application(_, _) = &**term1 {
-                        format!("{}", term1.to_string())
+                        term1.to_string()
                     } else {
                         format!("({})", term1.to_string())
                     };
                     let s2 = if let DeBruijnNode::FreeVariable(name) = &**term2 {
-                        format!("{}", name)
+                        name.to_string()
                     } else if let DeBruijnNode::BoundVariable(i) = &**term2 {
                         format!("{}", i)
                     } else {
@@ -70,26 +70,26 @@ impl DeBruijnNode {
 
 impl LambdaNode {
     pub fn church_numeral(n: u32) -> LambdaNode {
-        return LambdaNode::Abstraction("f".to_owned(),
+        LambdaNode::Abstraction("f".to_owned(),
                     Box::new(LambdaNode::Abstraction("x".to_owned(),
-                        Box::new(Self::church_applications(n)))));
+                        Box::new(Self::church_applications(n)))))
     }
 
     pub fn church_applications(n: u32) -> LambdaNode {
         if n == 0 {
-            return LambdaNode::Variable("x".to_owned());
+            LambdaNode::Variable("x".to_owned())
         } else {
-            return LambdaNode::Application(
+            LambdaNode::Application(
                         Box::new(LambdaNode::Variable("f".to_owned())),
-                        Box::new(Self::church_applications(n - 1)));
+                        Box::new(Self::church_applications(n - 1)))
         }
     }
 
     pub fn application_possible(&self) -> bool {
         if let LambdaNode::Application(left, _right) = self {
-            return left.is_abstraction();
+            left.is_abstraction()
         } else {
-            return false;
+            false
         }
     }
 
@@ -114,17 +114,14 @@ impl LambdaNode {
                 vars.extend(right.bound_variables());
             },
         }
-        return vars;
+        vars
     }
 
     fn find_next_redex_applicative(&self) -> Option<(ReductionLambdaNode, i32)> {
         match self {
             LambdaNode::Variable(_) => None,
             LambdaNode::Abstraction(var_name, term)
-                    => match term.find_next_redex_applicative() {
-                Some((tree, depth)) => Some((ReductionLambdaNode::Abstraction(var_name.clone(), Box::new(tree)), depth + 1)),
-                None => None,
-            },
+                    => term.find_next_redex_applicative().map(|(tree, depth)| (ReductionLambdaNode::Abstraction(var_name.clone(), Box::new(tree)), depth + 1)),
             LambdaNode::Application(left, right) => {
                 let left_option = left.find_next_redex_applicative();
                 let right_option = right.find_next_redex_applicative();
@@ -133,13 +130,13 @@ impl LambdaNode {
                     let (left_tree, left_depth) = left_option.unwrap();
                     let (right_tree, right_depth) = right_option.unwrap();
                     if left_depth >= right_depth {
-                        return Some((ReductionLambdaNode::Application(false, Box::new(left_tree),
+                        Some((ReductionLambdaNode::Application(false, Box::new(left_tree),
                                             Box::new(right.to_reduction_lambda_node(false))),
-                                left_depth + 1));
+                                left_depth + 1))
                     } else {
-                        return Some((ReductionLambdaNode::Application(false,
+                        Some((ReductionLambdaNode::Application(false,
                                             Box::new(left.to_reduction_lambda_node(false)), Box::new(right_tree)),
-                                right_depth + 1));
+                                right_depth + 1))
                     }
                 } else if left_option.is_some() {
                     let (left_tree, left_depth) = left_option.unwrap();
@@ -164,13 +161,10 @@ impl LambdaNode {
         match self {
             LambdaNode::Variable(_) => None,
             LambdaNode::Abstraction(var_name, term)
-                    => match term.find_next_redex_normal() {
-                Some((tree, depth)) => Some((ReductionLambdaNode::Abstraction(var_name.clone(), Box::new(tree)), depth + 1)),
-                None => None,
-            },
+                    => term.find_next_redex_normal().map(|(tree, depth)| (ReductionLambdaNode::Abstraction(var_name.clone(), Box::new(tree)), depth + 1)),
             LambdaNode::Application(left, right) => {
                 if self.application_possible() {
-                    return Some((self.to_reduction_lambda_node(true), 0))
+                    Some((self.to_reduction_lambda_node(true), 0))
                 } else {
                     let left_option = left.find_next_redex_normal();
                     let right_option = right.find_next_redex_normal();
@@ -179,13 +173,13 @@ impl LambdaNode {
                         let (left_tree, left_depth) = left_option.unwrap();
                         let (right_tree, right_depth) = right_option.unwrap();
                         if left_depth >= right_depth {
-                            return Some((ReductionLambdaNode::Application(false, Box::new(left_tree),
+                            Some((ReductionLambdaNode::Application(false, Box::new(left_tree),
                                                 Box::new(right.to_reduction_lambda_node(false))),
-                                    left_depth + 1));
+                                    left_depth + 1))
                         } else {
-                            return Some((ReductionLambdaNode::Application(false,
+                            Some((ReductionLambdaNode::Application(false,
                                                 Box::new(left.to_reduction_lambda_node(false)), Box::new(right_tree)),
-                                    right_depth + 1));
+                                    right_depth + 1))
                         }
                     } else if left_option.is_some() {
                         let (left_tree, left_depth) = left_option.unwrap();
@@ -218,7 +212,7 @@ impl LambdaNode {
                 vars.extend(right.free_variables());
             },
         }
-        return vars;
+        vars
     }
 
     pub fn is_variable(&self) -> bool {
@@ -250,9 +244,9 @@ impl LambdaNode {
 
         if let Some((tree, depth)) = tree_option {
             let redex = tree.marked_reduction()?;
-            return Some((redex, depth));
+            Some((redex, depth))
         } else {
-            return None;
+            None
         }
     }
 
@@ -266,7 +260,7 @@ impl LambdaNode {
             term = reduction_tree.reduce();
             counter += 1;
         }
-        return (term, counter);
+        (term, counter)
     }
 
     pub fn reduce(&self, strategy: ReductionStrategy) -> LambdaNode {
@@ -275,7 +269,7 @@ impl LambdaNode {
             ReductionStrategy::Applicative => self.find_next_redex_applicative(),
         };
 
-        return match tree_option {
+        match tree_option {
             Some(tree) => tree.0.reduce(),
             None => self.clone(),
         }
@@ -302,7 +296,7 @@ impl LambdaNode {
             bi_subs += bs;
         }
 
-        return (tree, bi_subs, var_subs);
+        (tree, bi_subs, var_subs)
     }
 
     pub fn substitute(&self, sigma: &HashMap<&str, &LambdaNode>) -> (LambdaNode, u32) {
@@ -310,7 +304,7 @@ impl LambdaNode {
             LambdaNode::Variable(name) => apply_substitution(name.as_str(), sigma),
             LambdaNode::Abstraction(var_name, term) => {
                 let rotten = self.free_variables().iter()
-                    .map(|z| apply_substitution(z, &sigma).0.free_variables())
+                    .map(|z| apply_substitution(z, sigma).0.free_variables())
                     .fold(HashSet::new(), |mut set, fv| { set.extend(fv); set });
                 let fresh = fresh_var(var_name, rotten);
                 let fresh_node = LambdaNode::Variable(fresh.clone());
@@ -325,7 +319,7 @@ impl LambdaNode {
                 (LambdaNode::Application(Box::new(left), Box::new(right)), cleft + cright)
             }
         };
-        return (a, b);
+        (a, b)
     }
 
     fn to_reduction_lambda_node(&self, mark: bool) -> ReductionLambdaNode {
@@ -340,7 +334,7 @@ impl LambdaNode {
     }
 
     pub fn to_debrujin(&self) -> DeBruijnNode {
-        return self.to_debrujin_helper(&mut HashMap::new());
+        self.to_debrujin_helper(&mut HashMap::new())
     }
 
     fn to_debrujin_helper<'a>(&'a self, map: &mut HashMap<&'a str, u32>) -> DeBruijnNode {
@@ -377,14 +371,14 @@ impl LambdaNode {
             LambdaNode::Application(term1, term2)
                 => {
                     let s1 = if let LambdaNode::Variable(name) = &**term1 {
-                        format!("{}", name)
+                        name.to_string()
                     } else if let LambdaNode::Application(_, _) = &**term1 {
-                        format!("{}", term1.to_string())
+                        term1.to_string()
                     } else {
                         format!("({})", term1.to_string())
                     };
                     let s2 = if let LambdaNode::Variable(name) = &**term2 {
-                        format!("{}", name)
+                        name.to_string()
                     } else {
                         format!("({})", term2.to_string())
                     };
@@ -396,7 +390,7 @@ impl LambdaNode {
     pub fn substitute_var(&self, var_name: &str, replacement: &LambdaNode) -> (LambdaNode, u32) {
         let mut sigma = HashMap::new();
         sigma.insert(var_name, replacement);
-        return self.substitute(&sigma);
+        self.substitute(&sigma)
     }
 }
 
@@ -406,11 +400,11 @@ impl ReductionLambdaNode {
             ReductionLambdaNode::Variable(_) => None,
             ReductionLambdaNode::Abstraction(_, term) => term.marked_reduction(),
             ReductionLambdaNode::Application(mark, left, right) => if *mark {
-                return Some(LambdaNode::Application(Box::new(left.to_lambda_node()),
-                                                Box::new(right.to_lambda_node())));
+                Some(LambdaNode::Application(Box::new(left.to_lambda_node()),
+                                                Box::new(right.to_lambda_node())))
             } else {
-                return left.marked_reduction()
-                    .or(right.marked_reduction());
+                left.marked_reduction()
+                    .or(right.marked_reduction())
             }
         }
     }
@@ -425,12 +419,12 @@ impl ReductionLambdaNode {
                     let mut sigma = HashMap::new();
                     let replacement = right.to_lambda_node();
                     sigma.insert(var.as_str(), &replacement);
-                    return left_inner.to_lambda_node().substitute(&sigma).0;
+                    left_inner.to_lambda_node().substitute(&sigma).0
                 } else {
                     panic!("Malformed ReductionLambdaNode");
                 }
             } else {
-                return LambdaNode::Application(Box::new(left.reduce()), Box::new(right.reduce()));
+                LambdaNode::Application(Box::new(left.reduce()), Box::new(right.reduce()))
             },
         }
     }
@@ -466,7 +460,7 @@ pub fn match_assignment(s: Span) -> IResult<(String, LambdaNode)> {
     let (rest, term) = with_err(match_right_hand_side(rest), rest,
                             "missing right hand side on assignment".to_owned())?;
 
-    return Ok((rest, (name, term)));
+    Ok((rest, (name, term)))
 }
 
 fn apply_substitution(var: &str, sigma: &HashMap<&str, &LambdaNode>) -> (LambdaNode, u32) {
@@ -494,6 +488,6 @@ fn fresh_var(old_var: &str, rotten: HashSet<String>) -> String {
         new_var = format!("{}{}'", old_var, i);
         i += 1;
     }
-    return new_var;
+    new_var
 }
 

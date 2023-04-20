@@ -7,7 +7,7 @@ use crate::parsing::*;
 // https://en.wikipedia.org/wiki/Lambda_calculus
 // https://en.wikipedia.org/wiki/Church_encoding
 //
-static BUILTINS: &'static [(&str, &str)] = &[
+static BUILTINS: &[(&str, &str)] = &[
     // standard terms
     ("ID",      "\\x . x"),
     ("S",       "\\x y z . x z (y z)"),
@@ -51,6 +51,6 @@ pub fn get_builtins() -> HashMap<&'static str, LambdaNode> {
             panic!("Builtin '{}' is broken!!!", k);
         }
     }
-    return hash_map;
+    hash_map
 }
 

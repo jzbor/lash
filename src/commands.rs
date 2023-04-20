@@ -89,14 +89,14 @@ pub trait Command: Debug {
         let (rest, _) = with_err(tag(Self::keyword())(s), s,
                                  format!("unknown command '{}'", s))?;
         let (rest, _) = with_err(alt((recognize(space1), recognize(pair(space0,eof))))(rest), rest,
-                                 format!("unknown command"))?;
+                                 "unknown command".to_string())?;
         return Self::match_arguments(rest);
     }
 }
 
 impl Command for AlphaEqCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
@@ -114,7 +114,7 @@ impl Command for AlphaEqCommand {
                 None => return Err(format!("variable '{}' not found", self.second)),
             }
         }.resolve_vars(&state.builtins, &state.variables);
-        return Ok(format!("{}", first == second));
+        Ok(format!("{}", first == second))
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
@@ -124,18 +124,18 @@ impl Command for AlphaEqCommand {
         let (rest, second) = with_err(match_variable_name(rest), rest, msg.to_owned())?;
         let (rest, _) = with_err(space0(rest), rest, msg.to_owned())?;
         let (rest, _) = with_err(eof(rest), rest, msg.to_owned())?;
-        return Ok((rest, Box::new(AlphaEqCommand { first: (*first).to_owned(), second: (*second).to_owned() })));
+        Ok((rest, Box::new(AlphaEqCommand { first: (*first).to_owned(), second: (*second).to_owned() })))
     }
 
     fn keyword() -> &'static str {
-        return "alpha";
+        "alpha"
     }
 }
 
 
 impl Command for BuiltinsCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
@@ -144,105 +144,105 @@ impl Command for BuiltinsCommand {
     }
 
     fn keyword() -> &'static str {
-        return "builtins";
+        "builtins"
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
-        return match_no_arguments::<Self>()(s);
+        match_no_arguments::<Self>()(s)
     }
 }
 
 impl Command for CommentCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, _state: &mut State) -> Result<String, String> {
-        return Ok("".to_owned());
+        Ok("".to_owned())
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         let (rest, output) = combinator::rest(s)?;
-        return Ok((rest, Box::new(CommentCommand { comment: (*output).to_owned() })));
+        Ok((rest, Box::new(CommentCommand { comment: (*output).to_owned() })))
     }
 
     fn keyword() -> &'static str {
-        return ":";
+        ":"
     }
 }
 
 impl Command for DeBruijnCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
         let tree = term_or_last_lambda(&self.term, state)?;
         let (tree, _, _) = tree.resolve_vars(&state.builtins, &state.variables);
-        return Ok(tree.to_debrujin().to_string());
+        Ok(tree.to_debrujin().to_string())
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         let (rest, _) = space0(s)?;
         if eof::<Span,()>(s).is_ok() {
-            return Ok((rest, Box::new(DeBruijnCommand { term: None })));
+            Ok((rest, Box::new(DeBruijnCommand { term: None })))
         } else {
             let (rest, tree) = match_complete_lambda(s)?;
-            return Ok((rest, Box::new(DeBruijnCommand { term: Some(tree) })));
+            Ok((rest, Box::new(DeBruijnCommand { term: Some(tree) })))
         }
     }
 
     fn keyword() -> &'static str {
-        return "debruijn";
+        "debruijn"
     }
 }
 
 impl Command for EchoCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, _state: &mut State) -> Result<String, String> {
-        return Ok(format!(" {} ", self.msg));
+        Ok(format!(" {} ", self.msg))
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         let (rest, output) = combinator::rest(s)?;
-        return Ok((rest, Box::new(EchoCommand { msg: (*output).to_owned() })));
+        Ok((rest, Box::new(EchoCommand { msg: (*output).to_owned() })))
     }
 
     fn keyword() -> &'static str {
-        return "echo";
+        "echo"
     }
 }
 
 impl Command for HistoryCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
         if state.history.is_empty() {
-            return Err(format!("no history entry found"));
+            Err("no history entry found".to_string())
         } else {
             let items: Vec<String> = state.history.iter()
                 .map(|e| e.to_string()).collect();
-            return Ok(items.join("\n"));
+            Ok(items.join("\n"))
         }
     }
 
     fn keyword() -> &'static str {
-        return "hist";
+        "hist"
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
-        return match_no_arguments::<Self>()(s);
+        match_no_arguments::<Self>()(s)
     }
 }
 
 impl Command for InfoCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
@@ -252,22 +252,22 @@ impl Command for InfoCommand {
 builtin substitutions: {}
 variable substitutions: {}",
                     e.nbeta, e.bi_subs, e. var_subs)),
-            None => Err(format!("no history entry found")),
+            None => Err("no history entry found".to_string()),
         }
     }
 
     fn keyword() -> &'static str {
-        return "info";
+        "info"
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
-        return match_no_arguments::<Self>()(s);
+        match_no_arguments::<Self>()(s)
     }
 }
 
 impl Command for ModeCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
@@ -277,11 +277,11 @@ impl Command for ModeCommand {
 
         state.config.mode = self.mode;
 
-        return Ok("Changed mode".to_owned());
+        Ok("Changed mode".to_owned())
     }
 
     fn keyword() -> &'static str {
-        return "mode";
+        "mode"
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
@@ -298,13 +298,13 @@ impl Command for ModeCommand {
             "validate" => Mode::Validate,
             &_ => return Err(nom::Err::Error(ParseError::new("unknown mode".to_owned(), rest))),
         };
-        return Ok((rest, Box::new(ModeCommand { mode: mode })));
+        Ok((rest, Box::new(ModeCommand { mode })))
     }
 }
 
 impl Command for NormalEqCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
@@ -324,7 +324,7 @@ impl Command for NormalEqCommand {
         }.resolve_vars(&state.builtins, &state.variables);
         let (first, _) = first.normalize(state.config.strategy);
         let (second, _) = second.normalize(state.config.strategy);
-        return Ok(format!("{}", first == second));
+        Ok(format!("{}", first == second))
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
@@ -334,49 +334,49 @@ impl Command for NormalEqCommand {
         let (rest, second) = with_err(match_variable_name(rest), rest, msg.to_owned())?;
         let (rest, _) = with_err(space0(rest), rest, msg.to_owned())?;
         let (rest, _) = with_err(eof(rest), rest, msg.to_owned())?;
-        return Ok((rest, Box::new(NormalEqCommand { first: (*first).to_owned(), second: (*second).to_owned() })));
+        Ok((rest, Box::new(NormalEqCommand { first: (*first).to_owned(), second: (*second).to_owned() })))
     }
 
     fn keyword() -> &'static str {
-        return "eq";
+        "eq"
     }
 }
 
 impl Command for NormalizeCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
         let term = term_or_last_lambda(&self.term, state)?;
         let (term, _, _) = term.resolve_vars(&state.builtins, &state.variables);
         let (normal, nbeta) = term.normalize(state.config.strategy);
-        return Ok(format!("Normal form: {}\nBeta reductions: {}", normal.to_string(), nbeta));
+        Ok(format!("Normal form: {}\nBeta reductions: {}", normal.to_string(), nbeta))
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         let (rest, _) = space0(s)?;
         if eof::<Span,()>(s).is_ok() {
-            return Ok((rest, Box::new(NormalizeCommand { term: None })));
+            Ok((rest, Box::new(NormalizeCommand { term: None })))
         } else {
             let (rest, tree) = match_complete_lambda(s)?;
-            return Ok((rest, Box::new(NormalizeCommand { term: Some(tree) })));
+            Ok((rest, Box::new(NormalizeCommand { term: Some(tree) })))
         }
     }
 
     fn keyword() -> &'static str {
-        return "normal";
+        "normal"
     }
 }
 
 impl Command for NormalizeVariableCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
         match state.builtins.get(self.var.as_str()) {
-            Some(_term) => Err(format!("Cannot normalize builtins")),
+            Some(_term) => Err("Cannot normalize builtins".to_string()),
             None => match state.variables.get(&self.var) {
                 Some(term) => {
                     let (normal, nbeta) = term.normalize(state.config.strategy);
@@ -393,17 +393,17 @@ impl Command for NormalizeVariableCommand {
         let (rest, var) = with_err(match_variable_name(s), s, msg.to_owned())?;
         let (rest, _) = with_err(space0(rest), rest, msg.to_owned())?;
         let (rest, _) = with_err(eof(rest), rest, msg.to_owned())?;
-        return Ok((rest, Box::new(NormalizeVariableCommand { var: (*var).to_owned() })));
+        Ok((rest, Box::new(NormalizeVariableCommand { var: (*var).to_owned() })))
     }
 
     fn keyword() -> &'static str {
-        return "normalize";
+        "normalize"
     }
 }
 
 impl Command for PrintCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
@@ -421,17 +421,17 @@ impl Command for PrintCommand {
         let (rest, var) = with_err(match_variable_name(s), s, msg.to_owned())?;
         let (rest, _) = with_err(space0(rest), rest, msg.to_owned())?;
         let (rest, _) = with_err(eof(rest), rest, msg.to_owned())?;
-        return Ok((rest, Box::new(PrintCommand { var: (*var).to_owned() })));
+        Ok((rest, Box::new(PrintCommand { var: (*var).to_owned() })))
     }
 
     fn keyword() -> &'static str {
-        return "print";
+        "print"
     }
 }
 
 impl Command for ReduceCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
@@ -440,35 +440,35 @@ impl Command for ReduceCommand {
         match term.next_redex(state.config.strategy) {
             Some((redex, _depth)) => {
                 let reduced = term.reduce(state.config.strategy);
-                return Ok(format!("Redex: {}\n => {}", redex.to_string(), reduced.to_string()));
+                Ok(format!("Redex: {}\n => {}", redex.to_string(), reduced.to_string()))
             },
-            None => return Ok("This term already has normal form".to_owned()),
+            None => Ok("This term already has normal form".to_owned()),
         }
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         let (rest, _) = space0(s)?;
         if eof::<Span,()>(s).is_ok() {
-            return Ok((rest, Box::new(ReduceCommand { term: None })));
+            Ok((rest, Box::new(ReduceCommand { term: None })))
         } else {
             let (rest, tree) = match_complete_lambda(s)?;
-            return Ok((rest, Box::new(ReduceCommand { term: Some(tree) })));
+            Ok((rest, Box::new(ReduceCommand { term: Some(tree) })))
         }
     }
 
     fn keyword() -> &'static str {
-        return "reduced";
+        "reduced"
     }
 }
 
 impl Command for ReduceVariableCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
         match state.builtins.get(self.var.as_str()) {
-            Some(_term) => Err(format!("Cannot normalize builtins")),
+            Some(_term) => Err("Cannot normalize builtins".to_string()),
             None => match state.variables.get(&self.var) {
                 Some(term) => match term.next_redex(state.config.strategy) {
                     Some((redex, _depth)) => {
@@ -489,23 +489,23 @@ impl Command for ReduceVariableCommand {
         let (rest, var) = with_err(match_variable_name(s), s, msg.to_owned())?;
         let (rest, _) = with_err(space0(rest), rest, msg.to_owned())?;
         let (rest, _) = with_err(eof(rest), rest, msg.to_owned())?;
-        return Ok((rest, Box::new(ReduceVariableCommand { var: (*var).to_owned() })));
+        Ok((rest, Box::new(ReduceVariableCommand { var: (*var).to_owned() })))
     }
 
     fn keyword() -> &'static str {
-        return "reduce";
+        "reduce"
     }
 }
 
 impl Command for SourceCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
         let file = match File::open(&self.filename) {
             Ok(f) => f,
-            Err(e) => return Err(format!("Unable to open file ({})", e.to_string())),
+            Err(e) => return Err(format!("Unable to open file ({})", e)),
         };
         let mut reader = BufReader::new(file);
         let interactive = state.interactive;
@@ -520,7 +520,7 @@ impl Command for SourceCommand {
                     break;
                 },
                 Err(e) => {
-                    result = Err(format!("Fatal IO Error: {}", e.to_string()));
+                    result = Err(format!("Fatal IO Error: {}", e));
                     break;
                 },
             }
@@ -531,29 +531,29 @@ impl Command for SourceCommand {
             if eof {
                 break;
             }
-            if let Err(_) = answer {
+            if answer.is_err() {
                 result = Err(format!("A fatal error occurred while parsing '{}'", self.filename));
                 break;
             }
         }
 
         state.interactive = interactive;
-        return result;
+        result
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         let (rest, output) = combinator::rest(s)?;
-        return Ok((rest, Box::new(SourceCommand { filename: (*output).to_owned() })));
+        Ok((rest, Box::new(SourceCommand { filename: (*output).to_owned() })))
     }
 
     fn keyword() -> &'static str {
-        return "source";
+        "source"
     }
 }
 
 impl Command for StepsCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
@@ -572,34 +572,34 @@ impl Command for StepsCommand {
                         tree = t;
                     }
                 }
-                return Ok(lines.join("\n"));
+                Ok(lines.join("\n"))
             } else {
                 panic!("last_lambda() didn't return lambda entry");
             }
         } else {
-            return Err("no history entry found".to_owned());
+            Err("no history entry found".to_owned())
         }
     }
 
     fn keyword() -> &'static str {
-        return "steps";
+        "steps"
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
-        return match_no_arguments::<Self>()(s);
+        match_no_arguments::<Self>()(s)
     }
 }
 
 impl Command for StoreCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
         if let Some(hist_entry) = state.last_lambda() {
             if let LineType::Lambda(tree) = &hist_entry.parsed {
                 let result = state.add_variable(self.name.clone(), tree.clone());
-                return match result {
+                match result {
                     Ok(_) => Ok(format!("Added variable mapping for '{}'", self.name)),
                     Err(()) => Err(format!("unable to overwrite builtin '{}'", self.name)),
                 }
@@ -607,23 +607,23 @@ impl Command for StoreCommand {
                 panic!("Malformed history entry");
             }
         } else {
-            return Err("no history entry found".to_owned());
+            Err("no history entry found".to_owned())
         }
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
         let (rest, name) = match_variable_name(s)?;
-        return Ok((rest, Box::new(StoreCommand { name: name.to_owned() })));
+        Ok((rest, Box::new(StoreCommand { name: name.to_owned() })))
     }
 
     fn keyword() -> &'static str {
-        return "store";
+        "store"
     }
 }
 
 impl Command for StrategyCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
@@ -633,11 +633,11 @@ impl Command for StrategyCommand {
 
         state.config.strategy = self.strategy;
 
-        return Ok("Changed strategy".to_owned());
+        Ok("Changed strategy".to_owned())
     }
 
     fn keyword() -> &'static str {
-        return "strategy";
+        "strategy"
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
@@ -652,13 +652,13 @@ impl Command for StrategyCommand {
             "applicative" => ReductionStrategy::Applicative,
             &_ => return Err(nom::Err::Error(ParseError::new("unknown strategy".to_owned(), rest))),
         };
-        return Ok((rest, Box::new(StrategyCommand { strategy: strategy })));
+        Ok((rest, Box::new(StrategyCommand { strategy })))
     }
 }
 
 impl Command for VariablesCommand {
     fn clone_to_box(&self) -> Box<dyn Command> {
-        return Box::new(self.clone());
+        Box::new(self.clone())
     }
 
     fn execute(&self, state: &mut State) -> Result<String, String> {
@@ -667,21 +667,21 @@ impl Command for VariablesCommand {
     }
 
     fn keyword() -> &'static str {
-        return "vars";
+        "vars"
     }
 
     fn match_arguments(s: Span) -> IResult<Box<dyn Command>> {
-        return match_no_arguments::<Self>()(s);
+        match_no_arguments::<Self>()(s)
     }
 }
 
 fn match_no_arguments<T>() -> impl FnMut(Span) -> IResult<Box<dyn Command>>
         where T: Clone + Command + Default + 'static {
-    return |s| {
-        let default: Box<dyn Command> = Box::new(T::default());
+    |s| {
+        let default: Box<dyn Command> = Box::<T>::default();
         Ok((s, default))
             .conclude(|_| format!("command '{}' does not take any arguments", T::keyword()))
-    };
+    }
 }
 
 fn term_or_last_lambda(optional: &Option<LambdaNode>, state: &State) -> Result<LambdaNode, String> {
@@ -726,5 +726,5 @@ pub fn match_command(s: Span) -> IResult<Box<dyn Command>> {
         VariablesCommand::match_command,
     );
 
-    return alt(command_matchers)(rest);
+    alt(command_matchers)(rest)
 }

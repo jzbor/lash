@@ -45,7 +45,7 @@ fn handle_assignment(state: &mut State, input: String, name: String, term: Lambd
             Err(msg.to_owned())
         },
     };
-    return (result, hist_entry);
+    (result, hist_entry)
 }
 
 fn handle_command(state: &mut State, input: String, command: Box<dyn Command>) -> (Result<String, String>, HistoryEntry) {
@@ -65,7 +65,7 @@ fn handle_command(state: &mut State, input: String, command: Box<dyn Command>) -
         },
     };
 
-    return (result, hist_entry);
+    (result, hist_entry)
 }
 
 fn handle_lambda(state: &State, input: String, tree: LambdaNode) -> (Result<String, String>, HistoryEntry) {
@@ -76,14 +76,14 @@ fn handle_lambda(state: &State, input: String, tree: LambdaNode) -> (Result<Stri
         Mode::Validate => Ok((tree, 0)),
     };
 
-    return match result {
+    match result {
         Ok((tree, nbeta)) => {
             let output = tree.to_string();
             let hist_entry = HistoryEntry {
-                input: input,
+                input,
                 parsed: LineType::Lambda(tree),
                 output: output.clone(),
-                nbeta: nbeta,
+                nbeta,
                 var_subs: vsubs,
                 bi_subs: bsubs,
             };
@@ -92,7 +92,7 @@ fn handle_lambda(state: &State, input: String, tree: LambdaNode) -> (Result<Stri
         Err(msg) => {
             let output = format!("Error: {}", &msg);
             let hist_entry = HistoryEntry {
-                input: input,
+                input,
                 parsed: LineType::Error(msg),
                 output: output.clone(),
                 nbeta: 0,
@@ -110,7 +110,7 @@ fn on_parsing_error(_state: &State, input: String, msg: &str) -> (Result<String,
     hist_entry.input = input;
     hist_entry.parsed = LineType::Error(msg.to_string());
     hist_entry.output = output.clone();
-    return (Err(output), hist_entry);
+    (Err(output), hist_entry)
 }
 
 fn match_nop(s: Span) -> IResult<LineType> {
@@ -119,13 +119,13 @@ fn match_nop(s: Span) -> IResult<LineType> {
 }
 
 fn match_eof(s: Span) -> IResult<LineType> {
-    return eof(s).map(|(rest, _)| (rest, LineType::EOF()));
+    eof(s).map(|(rest, _)| (rest, LineType::EOF()))
 }
 
 
 fn match_wrapper(s: &str) -> Result<LineType, String> {
-    let to_command = |c| LineType::Command(c);
-    let to_lambda = |l| LineType::Lambda(l);
+    let to_command = LineType::Command;
+    let to_lambda = LineType::Lambda;
     let to_assignment = |(k, v)| LineType::Assignment(k, v);
     let (s, _) = space0::<&str, ()>(s).unwrap();
 
@@ -143,7 +143,7 @@ fn match_wrapper(s: &str) -> Result<LineType, String> {
 }
 
 fn normalize(tree: &LambdaNode, strategy: ReductionStrategy) -> Result<(LambdaNode, u32), String> {
-    return Ok(tree.normalize(strategy));
+    Ok(tree.normalize(strategy))
 }
 
 fn process_line(input: String, state: &mut State) -> (Result<String, String>, bool) {
@@ -163,15 +163,15 @@ fn process_line(input: String, state: &mut State) -> (Result<String, String>, bo
 
     state.history.push(hist_entry);
 
-    return match result {
+    match result {
         Err(msg) => (Err(msg), false),
         ok => (ok, false),
-    };
+    }
 }
 
 fn reduce(tree: &LambdaNode, strategy: ReductionStrategy) -> Result<(LambdaNode, u32), String> {
     let tree = tree.reduce(strategy);
-    return Ok((tree, 1));
+    Ok((tree, 1))
 }
 
 fn file(state: &mut State, filename: &str) {
@@ -186,7 +186,7 @@ fn file(state: &mut State, filename: &str) {
                 break;
             },
             Err(e) => {
-                println!("Fatal IO Error: {}", e.to_string());
+                println!("Fatal IO Error: {}", e);
                 break;
             },
         }
@@ -199,8 +199,8 @@ fn file(state: &mut State, filename: &str) {
             break;
         } else {
             match result {
-                Ok(output) => if output != "" {
-                    println!(" | {}\n", output.replace("\n", "\n | "));
+                Ok(output) => if !output.is_empty() {
+                    println!(" | {}\n", output.replace('\n', "\n | "));
                 },
                 Err(msg) => {
                     println!("\n{}", msg);
@@ -233,10 +233,10 @@ fn repl(state: &mut State) {
                     break;
                 } else {
                     match result {
-                        Ok(output) => if output != "" {
+                        Ok(output) => if !output.is_empty() {
                             println!("{}\n", output);
                         },
-                        Err(msg) => if msg != "" {
+                        Err(msg) => if !msg.is_empty() {
                             println!("{}\n", msg)
                         },
                     }
