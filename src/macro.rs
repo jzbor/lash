@@ -7,7 +7,9 @@ pub enum Macro {
     Debug,
     Nop,
     Normalize,
+    NormalizeVerbose,
     Reduce,
+    ReduceVerbose,
 }
 
 impl Macro {
@@ -17,6 +19,8 @@ impl Macro {
             "nop" => Some(Self::Nop),
             "normalize" => Some(Self::Normalize),
             "reduce" => Some(Self::Reduce),
+            "vnormalize" => Some(Self::NormalizeVerbose),
+            "vreduce" => Some(Self::ReduceVerbose),
             _ => None,
         }
     }
@@ -26,8 +30,10 @@ impl Macro {
         match self {
             Debug => { println!("{}", term); term },
             Nop => term,
-            Normalize => interpreter.strategy().normalize(term.clone()),
-            Reduce => if let Some((reduced, _)) = interpreter.strategy().reduce(term.clone()) { reduced } else { term },
+            Normalize => interpreter.strategy().normalize(term.clone(), false),
+            NormalizeVerbose => interpreter.strategy().normalize(term.clone(), true),
+            Reduce => if let Some(reduced) = interpreter.strategy().reduce(term.clone(), false) { reduced } else { term },
+            ReduceVerbose => if let Some(reduced) = interpreter.strategy().reduce(term.clone(), true) { reduced } else { term },
         }
     }
 }
@@ -40,6 +46,8 @@ impl Display for Macro {
             Nop => "nop",
             Normalize => "normalize",
             Reduce => "reduce",
+            NormalizeVerbose => "vnormalize",
+            ReduceVerbose => "vreduce",
         };
         write!(f, "{}", s)
     }

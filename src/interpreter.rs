@@ -4,14 +4,13 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::parsing;
-use crate::strategy;
 use crate::strategy::Strategy;
 use crate::lambda::*;
 
 
 pub struct Interpreter {
     named_terms: HashMap<String, Rc<NamedTerm>>,
-    strategy: Box<dyn Strategy>,
+    strategy: Strategy,
 }
 
 
@@ -19,7 +18,7 @@ impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {
             named_terms: HashMap::new(),
-            strategy: Box::new(strategy::default_strategy())
+            strategy: Strategy::default()
         }
     }
 
@@ -51,8 +50,8 @@ impl Interpreter {
         self.parse_contents(&contents);
     }
 
-    pub fn strategy(&self) -> &dyn Strategy {
-        self.strategy.as_ref()
+    pub fn strategy(&self) -> Strategy {
+        self.strategy
     }
 }
 

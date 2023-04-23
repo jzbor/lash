@@ -71,6 +71,43 @@ impl LambdaTree {
         }
     }
 
+    pub fn fmt_with_parenthesis(&self) -> String {
+        if self.needs_parenthesis() {
+            format!("({})", self)
+        } else {
+            format!("{}", self)
+        }
+    }
+
+    pub fn is_abstraction(&self) -> bool {
+        use LambdaNode::*;
+        if let Abstraction(..) = self.node() { true } else { false }
+    }
+
+    pub fn is_application(&self) -> bool {
+        use LambdaNode::*;
+        if let Application(..) = self.node() { true } else { false }
+    }
+
+    pub fn is_macro(&self) -> bool {
+        use LambdaNode::*;
+        if let Macro(..) = self.node() { true } else { false }
+    }
+
+    pub fn is_named(&self) -> bool {
+        use LambdaNode::*;
+        if let Named(..) = self.node() { true } else { false }
+    }
+
+    pub fn is_variable(&self) -> bool {
+        use LambdaNode::*;
+        if let Variable(..) = self.node() { true } else { false }
+    }
+
+    pub fn needs_parenthesis(&self) -> bool {
+        !(self.is_named() || self.is_variable())
+    }
+
     pub fn node(&self) -> &LambdaNode {
         let LambdaTree(item) = self;
         item.as_ref()
@@ -103,7 +140,7 @@ impl LambdaTree {
                     self.clone()
                 }
             },
-            Macro(..) => self.clone(),
+            Macro(m, term) => Self::new_macro(*m, term.set_named_terms_helper(named_terms, bound_vars)),
             Named(_) => self.clone(),
         }
     }
@@ -130,9 +167,8 @@ impl LambdaTree {
                     self.clone()
                 }
             },
-            Macro(..) => self.clone(),
+            Macro(m, term) => Self::new_macro(*m, term.substitute(name, term.clone())),
             Named(_) => self.clone(),
-
         }
     }
 }
@@ -146,23 +182,7 @@ impl Display for LambdaTree {
                 term.fmt(f)
             },
             Application(term1, term2) => {
-                if let Variable(name) = term1.node() {
-                    write!(f, "{}", name)?;
-                } else if let Application(_, _) = term1.node() {
-                    term1.fmt(f)?;
-                } else {
-                    write!(f, "({})", term1)?;
-                }
-
-                write!(f, " ")?;
-
-                if let Variable(name) = term2.node() {
-                    write!(f, "{}", name)
-                } else if let Application(_, _) = term2.node() {
-                    term2.fmt(f)
-                } else {
-                    write!(f, "({})", term2)
-                }
+                write!(f, "{} {}", term1.fmt_with_parenthesis(), term2.fmt_with_parenthesis())
             },
             Variable(name) => write!(f, "{}", name),
             Macro(m, term) => {
