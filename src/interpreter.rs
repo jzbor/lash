@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
+use crate::error::*;
 use crate::parsing;
+use crate::parsing::Statement;
 use crate::strategy::Strategy;
 use crate::lambda::*;
 
@@ -22,10 +24,9 @@ impl Interpreter {
         }
     }
 
-    pub fn parse_contents(&mut self, content: &str) {
+    pub fn interpret_contents(&mut self, content: &str) -> LashResult<()> {
         use parsing::Statement::*;
-        let (rest, statements) = parsing::match_statements(parsing::Span::new(&content))
-            .unwrap();
+        let (rest, statements) = parsing::match_statements(parsing::Span::new(&content))?;
         assert!(rest.is_empty());
 
         for statement in statements {
@@ -37,6 +38,23 @@ impl Interpreter {
                 Lambda(term) => { self.process_lambda_term(term); },
             }
         }
+
+        Ok(())
+    }
+
+    pub fn interpret_line(&mut self, line: &str) -> LashResult<parsing::Statement> {
+        use parsing::Statement::*;
+        let (rest, statement) = parsing::match_statement(parsing::Span::new(&line), false)?;
+        assert!(rest.is_empty());
+
+        match statement.clone() {
+            Assignment(name, term) => {
+                let term = self.process_lambda_term(term);
+                self.named_terms.insert(name.clone(), Rc::new(NamedTerm::new(name.clone(), term.clone())));
+                Ok(Statement::Assignment(name, term))
+            },
+            Lambda(term) => Ok(Statement::Lambda(self.process_lambda_term(term))),
+        }
     }
 
     fn process_lambda_term(&self, term: LambdaTree) -> LambdaTree {
@@ -45,9 +63,9 @@ impl Interpreter {
         with_macros
     }
 
-    pub fn parse_file(&mut self, file: PathBuf) {
+    pub fn interpret_file(&mut self, file: PathBuf) -> LashResult<()> {
         let contents = fs::read_to_string(file).unwrap();
-        self.parse_contents(&contents);
+        self.interpret_contents(&contents)
     }
 
     pub fn strategy(&self) -> Strategy {

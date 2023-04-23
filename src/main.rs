@@ -1,14 +1,14 @@
 use clap::Parser;
-use std::rc::Rc;
 use interpreter::Interpreter;
 use std::path::PathBuf;
 
 
-mod context;
+mod error;
+mod interactive;
 mod interpreter;
 mod lambda;
-mod r#macro;
 mod parsing;
+mod r#macro;
 mod strategy;
 
 
@@ -24,8 +24,10 @@ fn main() {
     let mut interpreter = Interpreter::new();
 
     if let Some(file) = args.file {
-        interpreter.parse_file(file);
+        if let Err(e) = interpreter.interpret_file(file) {
+            e.resolve();
+        }
     } else {
-        todo!("interactive mode")
+        interactive::repl(&mut interpreter);
     }
 }

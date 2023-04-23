@@ -69,6 +69,13 @@ impl Strategy {
                 } else if let Abstraction(var_name, inner_term) = left_term.node() {
                     let string = Self::reduction_format_redex(&left_term, &right_term, verbose);
                     Some((inner_term.substitute(var_name, right_term.clone()), 0, string))
+                } else if let Named(named) = left_term.node() {
+                    if let Abstraction(var_name, inner_term) = named.term().node() {
+                        let string = Self::reduction_format_redex(&left_term, &right_term, verbose);
+                        Some((inner_term.substitute(var_name, right_term.clone()), 0, string))
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 }

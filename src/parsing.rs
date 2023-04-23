@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, fmt::Display};
 use nom::{
     branch::*,
     bytes::complete::*,
@@ -21,7 +21,7 @@ pub struct ParseError<'a> {
     message: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     Assignment(String, LambdaTree),
     Lambda(LambdaTree),
@@ -76,6 +76,22 @@ impl<'a> nom::error::ParseError<Span<'a>> for ParseError<'a> {
             self
         } else {
             other
+        }
+    }
+}
+
+impl<'a> Display for ParseError<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} (line {})" , self.message, self.line())
+    }
+}
+
+impl Display for Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use Statement::*;
+        match self {
+            Assignment(name, term) => write!(f, "{} := {}", name, term),
+            Lambda(term) => write!(f, "{}", term),
         }
     }
 }
@@ -153,11 +169,15 @@ fn match_macro(s: Span) -> IResult<LambdaTree> {
     Ok((rest, LambdaTree::new_macro(m, lambda)))
 }
 
-pub fn match_statement(s: Span) -> IResult<Statement> {
+pub fn match_statement(s: Span, with_semicolon: bool) -> IResult<Statement> {
     let (rest, statement) = alt((|x| match_assignment(x).map(|(r, (n, l))| (r, Statement::Assignment(n, l))),
                                  |x| match_lambda(x).map(|(r, l)| (r, Statement::Lambda(l)))))(s)?;
     let (rest, _) = multispace0(rest)?;
-    let (rest, _) = char(';')(rest)?;
+    let (rest, _) = if with_semicolon {
+        (char(';')(rest)?.0, 0)
+    } else {
+        (opt(char(';'))(rest)?.0, 0)
+    };
     let (rest, _) = multispace0(rest)?;
     Ok((rest, statement))
 }
@@ -167,7 +187,7 @@ pub fn match_statements(s: Span) -> IResult<Vec<Statement>> {
     let mut statements = Vec::new();
 
     loop {
-        let (r, statement) = match_statement(rest)?;
+        let (r, statement) = match_statement(rest, true)?;
         rest = r;
         statements.push(statement);
         if rest.is_empty() {
