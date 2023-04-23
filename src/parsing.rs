@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-
 use nom::{
     branch::*,
     bytes::complete::*,
@@ -10,11 +9,11 @@ use nom::{
 };
 use nom_locate::LocatedSpan;
 
-use crate::lambda::*;
+use crate::{lambda::*, r#macro::Macro};
+
 
 pub type Span<'a> = LocatedSpan<&'a str>;
 pub type IResult<'a, O> = nom::IResult<Span<'a>, O, ParseError<'a>>;
-
 
 #[derive(Debug, PartialEq)]
 pub struct ParseError<'a> {
@@ -22,9 +21,12 @@ pub struct ParseError<'a> {
     message: String,
 }
 
-pub trait Conclude<'a, O> {
-    fn conclude(self, msg: fn(&str) -> String) -> IResult<'a, O>;
+#[derive(Debug)]
+pub enum Statement {
+    Assignment(String, LambdaTree),
+    Lambda(LambdaTree),
 }
+
 
 impl<'a> ParseError<'a> {
     pub fn new(message: String, span: Span<'a>) -> Self {
@@ -48,38 +50,22 @@ impl<'a> ParseError<'a> {
     }
 }
 
-impl<'a, O> Conclude<'a, O> for IResult<'a, O> {
-    fn conclude(self, msg: fn(&str) -> String) -> IResult<'a, O> {
-        match self {
-            IResult::Ok((rest, result)) => {
-                let (rest, _) = space0(rest)?;
-
-                if eof::<&str, ()>(*rest).is_ok() {
-                    Ok((rest, result))
-                } else {
-                    return Err(nom::Err::Error(ParseError::new(msg(*rest), rest)));
-                }
-            },
-            error => error,
-        }
-    }
-}
 
 impl<'a> nom::error::ParseError<Span<'a>> for ParseError<'a> {
-    fn from_error_kind(input: Span<'a>, _kind: nom::error::ErrorKind) -> Self {
-        Self::new("unknown error".to_owned(), input)
+    fn from_error_kind(input: Span<'a>, kind: nom::error::ErrorKind) -> Self {
+        Self::new(kind.description().to_owned(), input)
     }
 
     fn append(_input: Span<'a>, _kind: nom::error::ErrorKind, other: Self) -> Self {
+        // TODO: build stack trace
         other
     }
 
     fn from_char(input: Span<'a>, c: char) -> Self {
-        Self::new(format!("unexpected character '{}'", c), input)
+        Self::new(format!("expected character '{}'", c), input)
     }
 
     fn or(self, other: Self) -> Self {
-        
         if self.line() == other.line() {
             if self.offset() > other.offset() {
                 self
@@ -94,87 +80,111 @@ impl<'a> nom::error::ParseError<Span<'a>> for ParseError<'a> {
     }
 }
 
-pub fn match_complete_lambda(s: Span) -> IResult<LambdaNode> {
-    return match_lambda(s)
-            .conclude(|r| format!("unable to parse lambda expression ('{}')", r));
-}
 
-// @TODO remove pub
-pub fn match_lambda_sign(s: Span) -> IResult<Span> {
-    recognize(alt((char('\\'), char('λ'))))(s)
-}
-
-pub fn match_variable_name<'a>(s: Span<'a>) -> IResult<&'a str> {
-    let (rest, name) = take_while1(|x| is_alphanumeric(x as u8) || x == '-' || x == '_' || x == '\'')(s)?;
-    Ok((rest, *name))
-}
-
-pub fn with_err<'a, O>(result: IResult<'a, O>, s: Span<'a>, msg: String) -> IResult<'a, O> {
-    result.map_err(|_| nom::Err::Error(ParseError::new(msg, s)))
-}
-
-fn match_abstraction(s: Span) -> IResult<LambdaNode> {
+fn match_abstraction(s: Span) -> IResult<LambdaTree> {
     let (rest, _) = match_lambda_sign(s)?;
-    let (rest, _) = space0(rest)?;
+    let (rest, _) = multispace0(rest)?;
     let (rest, mut variables) = map(match_variable_list, VecDeque::from)(rest)?;
-    let (rest, _) = space0(rest)?;
+    let (rest, _) = multispace0(rest)?;
     let (rest, _) = with_err(char('.')(rest), rest,
                              "expected '.' after abstraction variables".to_owned())?;
-    let (rest, _) = space0(rest)?;
+    let (rest, _) = multispace0(rest)?;
     let (rest, inner) = with_err(match_lambda(rest), rest,
                              "invalid or missing inner term on abstraction".to_owned())?;
 
-    let mut current_abstraction = LambdaNode::Abstraction(variables.pop_back().unwrap()
-                                                          .to_owned(), Box::new(inner));
+    let mut current_abstraction = LambdaTree::new_abstraction(variables.pop_back().unwrap().to_owned(), inner);
     while let Some(variable) = variables.pop_back() {
-        current_abstraction = LambdaNode::Abstraction(variable.to_owned(), Box::new(current_abstraction));
+        current_abstraction = LambdaTree::new_abstraction(variable.to_owned(), current_abstraction);
     }
 
     Ok((rest, current_abstraction))
 }
 
-fn match_application(s: Span) -> IResult<LambdaNode> {
+fn match_application(s: Span) -> IResult<LambdaTree> {
     let (rest, terms) = separated_list1(space1, match_group)(s)?;
     let node = vec_to_application(terms);
     Ok((rest, node))
 }
 
-fn match_bracketed(s: Span) -> IResult<LambdaNode> {
-    let (rest, _) = char('(')(s)?;
-    let (rest, _) = space0(rest)?;
+fn match_assignment(s: Span) -> IResult<(String, LambdaTree)> {
+    let (rest, name) = match_variable_name(s)?;
+    let (rest, _) = multispace0(rest)?;
+    let (rest, _) = tag(":=")(rest)?;
+    let (rest, _) = multispace0(rest)?;
     let (rest, lambda) = match_lambda(rest)?;
-    let (rest, _) = space0(rest)?;
+    Ok((rest, (name.to_owned(), lambda)))
+}
+
+fn match_bracketed(s: Span) -> IResult<LambdaTree> {
+    let (rest, _) = char('(')(s)?;
+    let (rest, _) = multispace0(rest)?;
+    let (rest, lambda) = match_lambda(rest)?;
+    let (rest, _) = multispace0(rest)?;
     let (rest, _) = char(')')(rest)?;
 
     Ok((rest, lambda))
 }
 
-fn match_numeral(s: Span) -> IResult<LambdaNode> {
-    let (rest, _) = char('$')(s)?;
-    let (rest, n) = match_u32(rest)?;
-    Ok((rest, LambdaNode::church_numeral(n)))
+fn match_group(s: Span) -> IResult<LambdaTree> {
+    alt((match_variable, match_bracketed))(s)
 }
 
-fn match_group(s: Span) -> IResult<LambdaNode> {
-    alt((match_variable, match_bracketed, match_numeral))(s)
+pub fn match_lambda(s: Span) -> IResult<LambdaTree> {
+    alt((match_macro, match_abstraction, match_application))(s)
 }
 
-fn match_lambda(s: Span) -> IResult<LambdaNode> {
-    alt((match_abstraction, match_application))(s)
+fn match_lambda_sign(s: Span) -> IResult<Span> {
+    recognize(alt((char('\\'), char('λ'))))(s)
 }
 
-fn match_u32(s: Span) -> IResult<u32> {
-    let (rest, digits) = recognize(digit1)(s)?;
-    let uint = match str::parse(*digits) {
-        Ok(ui) => ui,
-        Err(_) => return Err(nom::Err::Error(ParseError::new("unable to parse number".to_owned(), s))),
+fn match_macro(s: Span) -> IResult<LambdaTree> {
+    let (rest, _) = char('!')(s)?;
+    let (rest, macro_name) = alphanumeric1(rest)?;
+
+    let m = match Macro::get(&macro_name) {
+        Some(m) => m,
+        None => return Err(nom::Err::Error(ParseError::new(format!("unknown macro '{}'", macro_name), rest))),
     };
-    Ok((rest, uint))
+
+    let (rest, _) = multispace1(rest)?;
+    let (rest, lambda) = match_lambda(rest)?;
+    let (rest, _) = multispace0(rest)?;
+
+    Ok((rest, LambdaTree::new_macro(m, lambda)))
 }
 
-fn match_variable(s: Span) -> IResult<LambdaNode> {
+pub fn match_statement(s: Span) -> IResult<Statement> {
+    let (rest, statement) = alt((|x| match_assignment(x).map(|(r, (n, l))| (r, Statement::Assignment(n, l))),
+                                 |x| match_lambda(x).map(|(r, l)| (r, Statement::Lambda(l)))))(s)?;
+    let (rest, _) = multispace0(rest)?;
+    let (rest, _) = char(';')(rest)?;
+    let (rest, _) = multispace0(rest)?;
+    Ok((rest, statement))
+}
+
+pub fn match_statements(s: Span) -> IResult<Vec<Statement>> {
+    let mut rest = s;
+    let mut statements = Vec::new();
+
+    loop {
+        let (r, statement) = match_statement(rest)?;
+        rest = r;
+        statements.push(statement);
+        if rest.is_empty() {
+            break;
+        }
+    }
+
+    if eof::<&str, ()>(*rest).is_ok() {
+        Ok((rest, statements))
+    } else {
+        return Err(nom::Err::Error(ParseError::new("expected end of file".to_owned(), rest)));
+    }
+}
+
+pub fn match_variable(s: Span) -> IResult<LambdaTree> {
     let (rest, name) = match_variable_name(s)?;
-    Ok((rest, LambdaNode::Variable(name.to_owned())))
+    Ok((rest, LambdaTree::new_variable(name.to_owned())))
 }
 
 fn match_variable_list<'a>(s: Span<'a>) -> IResult<Vec<&'a str>> {
@@ -191,7 +201,7 @@ fn match_variable_list<'a>(s: Span<'a>) -> IResult<Vec<&'a str>> {
     }
 
     loop {
-        (rest, _) = space0(rest)?;
+        (rest, _) = multispace0(rest)?;
         if let Ok((r, name)) = match_variable_name(rest) {
             variables.push(name);
             rest = r;
@@ -202,8 +212,12 @@ fn match_variable_list<'a>(s: Span<'a>) -> IResult<Vec<&'a str>> {
 
     Ok((rest, variables))
 }
+pub fn match_variable_name<'a>(s: Span<'a>) -> IResult<&'a str> {
+    let (rest, name) = take_while1(|x| is_alphanumeric(x as u8) || x == '-' || x == '_' || x == '\'')(s)?;
+    Ok((rest, *name))
+}
 
-fn vec_to_application(mut terms: Vec<LambdaNode>) -> LambdaNode {
+fn vec_to_application(mut terms: Vec<LambdaTree>) -> LambdaTree {
     if terms.is_empty() {
         panic!("Invalid number of input terms for application");
     } else if terms.len() == 1 {
@@ -211,7 +225,11 @@ fn vec_to_application(mut terms: Vec<LambdaNode>) -> LambdaNode {
     } else {
         let right = terms.pop().unwrap();
         let left = vec_to_application(terms);
-        return LambdaNode::Application(Box::new(left), Box::new(right));
+        return LambdaTree::new_application(left, right);
     }
+}
+
+pub fn with_err<'a, O>(result: IResult<'a, O>, s: Span<'a>, msg: String) -> IResult<'a, O> {
+    result.map_err(|_| nom::Err::Error(ParseError::new(msg, s)))
 }
 

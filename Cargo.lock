@@ -212,7 +212,7 @@ checksum = "1ea37f355c05dde75b84bba2d767906ad522e97cd9e2eef2be7a4ab7fb442c06"
 
 [[package]]
 name = "lash"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "nom",
