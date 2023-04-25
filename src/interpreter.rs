@@ -28,6 +28,7 @@ impl Interpreter {
     pub fn interpret_contents(&mut self, content: &str) -> LashResult<()> {
         use parsing::Statement::*;
         let (rest, statements) = parsing::match_statements(parsing::Span::new(&content))?;
+        let (rest, _) = parsing::finish(rest)?;
         assert!(rest.is_empty(), "{:?}", rest);
 
         for statement in statements {
@@ -46,6 +47,7 @@ impl Interpreter {
     pub fn interpret_line(&mut self, line: &str) -> LashResult<parsing::Statement> {
         use parsing::Statement::*;
         let (rest, statement) = parsing::match_statement(parsing::Span::new(&line), false)?;
+        let (rest, _) = parsing::finish(rest)?;
         assert!(rest.is_empty(), "{:?}", rest);
 
         match statement.clone() {

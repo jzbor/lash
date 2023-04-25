@@ -97,6 +97,17 @@ impl Display for Statement {
 }
 
 
+pub fn finish(s: Span) -> IResult<()> {
+    let (rem_err, _) = multispace0(s)?;
+    let (rem_ok, rem) = rest(rem_err)?;
+
+    if !rem_err.is_empty() {
+        Err(nom::Err::Error(ParseError::new(format!("unable to parse remainder '{}'", rem), rem_err)))
+    } else {
+        Ok((rem_ok, ()))
+    }
+}
+
 fn match_abstraction(s: Span) -> IResult<LambdaTree> {
     let (rest, _) = match_lambda_sign(s)?;
     let (rest, _) = multispace0(rest)?;
@@ -262,4 +273,3 @@ fn vec_to_application(mut terms: Vec<LambdaTree>) -> LambdaTree {
 pub fn with_err<'a, O>(result: IResult<'a, O>, s: Span<'a>, msg: String) -> IResult<'a, O> {
     result.map_err(|_| nom::Err::Error(ParseError::new(msg, s)))
 }
-
