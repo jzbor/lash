@@ -9,6 +9,7 @@ mod interpreter;
 mod lambda;
 mod parsing;
 mod r#macro;
+mod stdlib;
 mod strategy;
 
 
@@ -22,6 +23,7 @@ struct Args {
 fn main() {
     let args = Args::parse();
     let mut interpreter = Interpreter::new();
+    interpreter.interpret_std().unwrap();
 
     if let Some(file) = args.file {
         if let Err(e) = interpreter.interpret_file(file) {

@@ -8,6 +8,7 @@ use crate::parsing;
 use crate::parsing::Statement;
 use crate::strategy::Strategy;
 use crate::lambda::*;
+use crate::stdlib::*;
 
 
 pub struct Interpreter {
@@ -55,6 +56,10 @@ impl Interpreter {
             },
             Lambda(term) => Ok(Statement::Lambda(self.process_lambda_term(term)?)),
         }
+    }
+
+    pub fn interpret_std(&mut self) -> LashResult<()> {
+        self.interpret_contents(STD)
     }
 
     fn process_lambda_term(&self, term: LambdaTree) -> LashResult<LambdaTree> {

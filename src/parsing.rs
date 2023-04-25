@@ -179,8 +179,9 @@ fn match_macro_args(s: Span) -> IResult<Vec<LambdaTree>> {
 }
 
 pub fn match_statement(s: Span, with_semicolon: bool) -> IResult<Statement> {
+    let (rest, _) = multispace0(s)?;
     let (rest, statement) = alt((|x| match_assignment(x).map(|(r, (n, l))| (r, Statement::Assignment(n, l))),
-                                 |x| match_lambda(x).map(|(r, l)| (r, Statement::Lambda(l)))))(s)?;
+                                 |x| match_lambda(x).map(|(r, l)| (r, Statement::Lambda(l)))))(rest)?;
     let (rest, _) = multispace0(rest)?;
     let (rest, _) = if with_semicolon {
         (char(';')(rest)?.0, 0)

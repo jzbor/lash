@@ -40,7 +40,7 @@ impl Strategy {
                 let inner_reduced = Self::reduce_applicative(term.clone(), verbose);
                 if let Some((term, depth, inner_string)) = inner_reduced {
                     let string = inner_string.map(|s| format!("{}{} . {}", '\\', var_name, s));
-                    Some((term, depth + 1, string))
+                    Some((LambdaTree::new_abstraction(var_name.to_owned(), term), depth + 1, string))
                 } else {
                     None
                 }
