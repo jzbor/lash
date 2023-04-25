@@ -92,19 +92,19 @@ impl Strategy {
         assert!(!(left_string.is_some() && right_string.is_some()));
         if verbose {
             if let Some(left_string) = left_string {
-                if left_term.needs_parenthesis() {
-                    Some(format!("({}) {}", left_string, right_term.fmt_with_parenthesis()))
+                if left_term.needs_parenthesis(true) {
+                    Some(format!("({}) {}", left_string, right_term.fmt_with_parenthesis(false)))
                 } else {
-                    Some(format!("{} {}", left_string, right_term.fmt_with_parenthesis()))
+                    Some(format!("{} {}", left_string, right_term.fmt_with_parenthesis(false)))
                 }
             } else if let Some(right_string) = right_string {
-                if right_term.needs_parenthesis() {
-                    Some(format!("{} ({})", left_term.fmt_with_parenthesis(), right_string))
+                if right_term.needs_parenthesis(false) {
+                    Some(format!("{} ({})", left_term.fmt_with_parenthesis(true), right_string))
                 } else {
-                    Some(format!("{} {}", left_term.fmt_with_parenthesis(), right_string))
+                    Some(format!("{} {}", left_term.fmt_with_parenthesis(true), right_string))
                 }
             } else {
-                Some(format!("{} {}", left_term.fmt_with_parenthesis(), right_term.fmt_with_parenthesis()))
+                Some(format!("{} {}", left_term.fmt_with_parenthesis(true), right_term.fmt_with_parenthesis(false)))
             }
         } else {
             None
@@ -113,7 +113,7 @@ impl Strategy {
 
     fn reduction_format_redex(left_term: &LambdaTree, right_term: &LambdaTree, verbose: bool) -> Option<String> {
         if verbose {
-            Some(format!("{} {}", left_term.fmt_with_parenthesis().blue(), right_term.fmt_with_parenthesis().bright_blue()))
+            Some(format!("{} {}", left_term.fmt_with_parenthesis(true).blue(), right_term.fmt_with_parenthesis(false).bright_blue()))
         } else {
             None
         }

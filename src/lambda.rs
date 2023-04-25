@@ -80,8 +80,8 @@ impl LambdaTree {
         }
     }
 
-    pub fn fmt_with_parenthesis(&self) -> String {
-        if self.needs_parenthesis() {
+    pub fn fmt_with_parenthesis(&self, left_of_appl: bool) -> String {
+        if self.needs_parenthesis(left_of_appl) {
             format!("({})", self)
         } else {
             format!("{}", self)
@@ -113,8 +113,8 @@ impl LambdaTree {
         if let Variable(..) = self.node() { true } else { false }
     }
 
-    pub fn needs_parenthesis(&self) -> bool {
-        !(self.is_named() || self.is_variable())
+    pub fn needs_parenthesis(&self, left_of_appl: bool) -> bool {
+        !(self.is_named() || self.is_variable() || (left_of_appl && self.is_application()))
     }
 
     pub fn node(&self) -> &LambdaNode {
@@ -192,7 +192,7 @@ impl Display for LambdaTree {
                 term.fmt(f)
             },
             Application(term1, term2) => {
-                write!(f, "{} {}", term1.fmt_with_parenthesis(), term2.fmt_with_parenthesis())
+                write!(f, "{} {}", term1.fmt_with_parenthesis(true), term2.fmt_with_parenthesis(false))
             },
             Variable(name) => write!(f, "{}", name),
             Macro(m, terms) => {
