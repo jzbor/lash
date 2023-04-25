@@ -1,20 +1,29 @@
 use std::fmt::Display;
 
-use crate::parsing;
+use crate::{parsing, r#macro::Macro};
 
 pub type LashResult<T> = Result<T, LashError>;
 
+#[derive(Debug,Clone)]
 pub struct LashError {
     error_type: LashErrorType,
     message: String,
 }
 
+#[derive(Debug,Clone)]
 pub enum LashErrorType {
     SyntaxError,
+    MacroArgError,
 }
 
-
 impl LashError {
+    pub fn new_macro_arg_error(m: Macro, args_given: usize, args_expected: usize) -> Self {
+        LashError {
+            error_type: LashErrorType::MacroArgError,
+            message: format!("macro {} expects {} arguments, but {} were given", m, args_given, args_expected),
+        }
+    }
+
     pub fn resolve(&self) {
         eprintln!("{}", self);
         std::process::exit(1);
@@ -26,6 +35,7 @@ impl Display for LashError {
         use LashErrorType::*;
         let prefix = match self.error_type {
             SyntaxError => "Syntax Error",
+            MacroArgError => "Macro Argument Error",
         };
         write!(f, "{}: {}", prefix, self.message)
     }

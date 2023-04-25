@@ -117,7 +117,7 @@ fn match_abstraction(s: Span) -> IResult<LambdaTree> {
 }
 
 fn match_application(s: Span) -> IResult<LambdaTree> {
-    let (rest, terms) = separated_list1(space1, match_group)(s)?;
+    let (rest, terms) = separated_list1(multispace1, match_group)(s)?;
     let node = vec_to_application(terms);
     Ok((rest, node))
 }
@@ -162,11 +162,20 @@ fn match_macro(s: Span) -> IResult<LambdaTree> {
         None => return Err(nom::Err::Error(ParseError::new(format!("unknown macro '{}'", macro_name), rest))),
     };
 
-    let (rest, _) = multispace1(rest)?;
-    let (rest, lambda) = match_lambda(rest)?;
-    let (rest, _) = multispace0(rest)?;
+    let (rest, args) = opt(match_macro_args)(rest)?;
+    let lambdas = match args {
+        Some(lambdas) => lambdas,
+        None => Vec::new(),
+    };
 
-    Ok((rest, LambdaTree::new_macro(m, lambda)))
+    Ok((rest, LambdaTree::new_macro(m, lambdas)))
+}
+
+fn match_macro_args(s: Span) -> IResult<Vec<LambdaTree>> {
+    let (rest, _) = multispace1(s)?;
+    let (rest, lambdas) = separated_list1(multispace1, match_group)(rest)?;
+    let (rest, _) = multispace0(rest)?;
+    Ok((rest, lambdas))
 }
 
 pub fn match_statement(s: Span, with_semicolon: bool) -> IResult<Statement> {

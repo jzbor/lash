@@ -27,15 +27,15 @@ impl Interpreter {
     pub fn interpret_contents(&mut self, content: &str) -> LashResult<()> {
         use parsing::Statement::*;
         let (rest, statements) = parsing::match_statements(parsing::Span::new(&content))?;
-        assert!(rest.is_empty());
+        assert!(rest.is_empty(), "{:?}", rest);
 
         for statement in statements {
             match statement {
                 Assignment(name, term) => {
-                    let term = self.process_lambda_term(term);
+                    let term = self.process_lambda_term(term)?;
                     self.named_terms.insert(name.clone(), Rc::new(NamedTerm::new(name, term)));
                 },
-                Lambda(term) => { self.process_lambda_term(term); },
+                Lambda(term) => { self.process_lambda_term(term)?; },
             }
         }
 
@@ -45,22 +45,22 @@ impl Interpreter {
     pub fn interpret_line(&mut self, line: &str) -> LashResult<parsing::Statement> {
         use parsing::Statement::*;
         let (rest, statement) = parsing::match_statement(parsing::Span::new(&line), false)?;
-        assert!(rest.is_empty());
+        assert!(rest.is_empty(), "{:?}", rest);
 
         match statement.clone() {
             Assignment(name, term) => {
-                let term = self.process_lambda_term(term);
+                let term = self.process_lambda_term(term)?;
                 self.named_terms.insert(name.clone(), Rc::new(NamedTerm::new(name.clone(), term.clone())));
                 Ok(Statement::Assignment(name, term))
             },
-            Lambda(term) => Ok(Statement::Lambda(self.process_lambda_term(term))),
+            Lambda(term) => Ok(Statement::Lambda(self.process_lambda_term(term)?)),
         }
     }
 
-    fn process_lambda_term(&self, term: LambdaTree) -> LambdaTree {
+    fn process_lambda_term(&self, term: LambdaTree) -> LashResult<LambdaTree> {
         let with_named = term.set_named_terms(&self.named_terms);
-        let with_macros = with_named.apply_macros(self);
-        with_macros
+        let with_macros = with_named.apply_macros(self)?;
+        Ok(with_macros)
     }
 
     pub fn interpret_file(&mut self, file: PathBuf) -> LashResult<()> {

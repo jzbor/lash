@@ -4,13 +4,14 @@ use std::rc::Rc;
 
 use crate::interpreter::Interpreter;
 use crate::r#macro::Macro;
+use crate::error::LashResult;
 
 
 #[derive(Clone, Debug)]
 pub enum LambdaNode {
     Abstraction(String, LambdaTree),
     Application(LambdaTree, LambdaTree),
-    Macro(Macro, LambdaTree),
+    Macro(Macro, Vec<LambdaTree>),
     Named(Rc<NamedTerm>),
     Variable(String),
 }
@@ -49,9 +50,9 @@ impl LambdaTree {
         LambdaTree(Rc::new(Application(left_term, right_term)))
     }
 
-    pub fn new_macro(m: Macro, term: Self) -> Self {
+    pub fn new_macro(m: Macro, terms: Vec<Self>) -> Self {
         use LambdaNode::*;
-        LambdaTree(Rc::new(Macro(m, term)))
+        LambdaTree(Rc::new(Macro(m, terms)))
     }
 
     pub fn new_variable(name: String) -> Self {
@@ -59,15 +60,23 @@ impl LambdaTree {
         LambdaTree(Rc::new(Variable(name)))
     }
 
-    pub fn apply_macros(&self, interpreter: &Interpreter) -> Self {
+    pub fn apply_macros(&self, interpreter: &Interpreter) -> LashResult<Self> {
         use LambdaNode::*;
         match self.node() {
-            Abstraction(var, term) => Self::new_abstraction(var.to_string(), term.apply_macros(interpreter)),
+            Abstraction(var, term) => Ok(Self::new_abstraction(var.to_string(), term.apply_macros(interpreter)?)),
             Application(left_term, right_term)
-                => Self::new_application(left_term.apply_macros(interpreter), right_term.apply_macros(interpreter)),
-            Variable(_) => self.clone(),
-            Macro(m, term) => m.apply(interpreter, term.apply_macros(interpreter)),
-            Named(_) => self.clone(),
+                => Ok(Self::new_application(left_term.apply_macros(interpreter)?, right_term.apply_macros(interpreter)?)),
+            Variable(_) => Ok(self.clone()),
+            Macro(m, terms) => {
+                let terms = terms.iter().map(|m| m.apply_macros(interpreter)).collect::<Vec<LashResult<LambdaTree>>>();
+                if let Some(e) = terms.iter().find(|r| (&r).is_err()) {
+                    e.clone()
+                } else {
+                    let terms = terms.iter().flatten().cloned().collect();
+                    m.apply(interpreter, terms)
+                }
+            } ,
+            Named(_) => Ok(self.clone()),
         }
     }
 
@@ -140,7 +149,8 @@ impl LambdaTree {
                     self.clone()
                 }
             },
-            Macro(m, term) => Self::new_macro(*m, term.set_named_terms_helper(named_terms, bound_vars)),
+            Macro(m, terms) => Self::new_macro(*m, terms.iter()
+                                               .map(|t| t.set_named_terms_helper(named_terms, bound_vars)).collect()),
             Named(_) => self.clone(),
         }
     }
@@ -167,7 +177,7 @@ impl LambdaTree {
                     self.clone()
                 }
             },
-            Macro(m, term) => Self::new_macro(*m, term.substitute(name, term.clone())),
+            Macro(m, terms) => Self::new_macro(*m, terms.iter().map(|t| t.substitute(name, term.clone())).collect()),
             Named(_) => self.clone(),
         }
     }
@@ -185,13 +195,16 @@ impl Display for LambdaTree {
                 write!(f, "{} {}", term1.fmt_with_parenthesis(), term2.fmt_with_parenthesis())
             },
             Variable(name) => write!(f, "{}", name),
-            Macro(m, term) => {
+            Macro(m, terms) => {
                 write!(f, "!{} ", m)?;
-                if let Variable(name) = term.node() {
-                    write!(f, "{}", name)
-                } else {
-                    write!(f, "({})", term)
+                for term in terms {
+                    if let Variable(name) = term.node() {
+                        write!(f, "{}", name)?;
+                    } else {
+                        write!(f, "({})", term)?;
+                    }
                 }
+                Ok(())
             }
             Named(named) => write!(f, "{}", named.name),
         }
