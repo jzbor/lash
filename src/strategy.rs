@@ -1,7 +1,9 @@
 use crate::lambda::*;
 use colored::Colorize;
+use clap::ValueEnum;
+use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, ValueEnum, Serialize, Deserialize)]
 pub enum Strategy {
     Applicative,
     Normal,

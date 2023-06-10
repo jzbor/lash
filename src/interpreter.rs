@@ -78,5 +78,9 @@ impl Interpreter {
     pub fn strategy(&self) -> Strategy {
         self.strategy
     }
+
+    pub fn set_strategy(&mut self, strategy: Strategy) {
+        self.strategy = strategy;
+    }
 }
 
