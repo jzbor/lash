@@ -21,9 +21,10 @@ impl Strategy {
     pub fn reduce(&self, term: LambdaTree, verbose: bool) -> Option<LambdaTree> {
         use Strategy::*;
         let result = match self {
+            // Applicative => Self::reduce_applicative(term, verbose),
             Applicative => Self::reduce_applicative(term, verbose),
         };
-        if let Some((lambda, _depth, string)) = result {
+        if let Some((lambda, string)) = result {
             if verbose {
                 println!("{}", string.unwrap());
             };
@@ -33,49 +34,43 @@ impl Strategy {
         }
     }
 
-    fn reduce_applicative(term: LambdaTree, verbose: bool) -> Option<(LambdaTree, u32, Option<String>)> {
+    fn reduce_applicative(term: LambdaTree, verbose: bool) -> Option<(LambdaTree, Option<String>)> {
         use LambdaNode::*;
         match term.node() {
             Abstraction(var_name, term) => {
                 let inner_reduced = Self::reduce_applicative(term.clone(), verbose);
-                if let Some((term, depth, inner_string)) = inner_reduced {
+                if let Some((term, inner_string)) = inner_reduced {
                     let string = inner_string.map(|s| format!("{}{} . {}", '\\', var_name, s));
-                    Some((LambdaTree::new_abstraction(var_name.to_owned(), term), depth + 1, string))
+                    Some((LambdaTree::new_abstraction(var_name.to_owned(), term), string))
                 } else {
                     None
                 }
-            }
+            },
             Application(left_term, right_term) => {
                 let left_option = Self::reduce_applicative(left_term.clone(), verbose);
                 let right_option = Self::reduce_applicative(right_term.clone(), verbose);
 
-                if left_option.is_some() && right_option.is_some() {
-                    let (left_reduced, left_depth, left_string) = left_option.unwrap();
-                    let (right_reduced, right_depth, right_string) = right_option.unwrap();
-
-                    if left_depth >= right_depth {
-                        let string = Self::reduction_format_application(left_term.clone(), left_string, right_term.clone(), None, verbose);
-                        Some((LambdaTree::new_application(left_reduced, right_term.clone()), left_depth + 1, string))
-                    } else {
-                        let string = Self::reduction_format_application(left_term.clone(), None, right_term.clone(), right_string, verbose);
-                        Some((LambdaTree::new_application(left_term.clone(), right_reduced), right_depth + 1, string))
+                if let Abstraction(var_name, inner_term) = left_term.node() {
+                    let inner_reduced = Self::reduce_applicative(inner_term.clone(), verbose);
+                    if inner_reduced.is_none() && right_option.is_none() {
+                        let string = Self::reduction_format_redex(&left_term, &right_term, verbose);
+                        return Some((inner_term.substitute(var_name, right_term.clone()), string));
                     }
-                } else if let Some((left_reduced, left_depth, left_string)) = left_option {
-                    let string = Self::reduction_format_application(left_term.clone(), left_string, right_term.clone(), None, verbose);
-                    Some((LambdaTree::new_application(left_reduced, right_term.clone()), left_depth + 1, string))
-                } else if let Some((right_reduced, right_depth, right_string)) = right_option {
-                    let string = Self::reduction_format_application(left_term.clone(), None, right_term.clone(), right_string, verbose);
-                    Some((LambdaTree::new_application(left_term.clone(), right_reduced), right_depth + 1, string))
-                } else if let Abstraction(var_name, inner_term) = left_term.node() {
-                    let string = Self::reduction_format_redex(&left_term, &right_term, verbose);
-                    Some((inner_term.substitute(var_name, right_term.clone()), 0, string))
-                } else if let Named(named) = left_term.node() {
+                }
+
+                if let Named(named) = left_term.node() {
                     if let Abstraction(var_name, inner_term) = named.term().node() {
                         let string = Self::reduction_format_redex(&left_term, &right_term, verbose);
-                        Some((inner_term.substitute(var_name, right_term.clone()), 0, string))
+                        Some((inner_term.substitute(var_name, right_term.clone()), string))
                     } else {
                         None
                     }
+                } else if let Some((left_reduced, left_string)) = left_option {
+                    let string = Self::reduction_format_application(left_term.clone(), left_string, right_term.clone(), None, verbose);
+                    Some((LambdaTree::new_application(left_reduced, right_term.clone()), string))
+                } else if let Some((right_reduced, right_string)) = right_option {
+                    let string = Self::reduction_format_application(left_term.clone(), None, right_term.clone(), right_string, verbose);
+                    Some((LambdaTree::new_application(left_term.clone(), right_reduced), string))
                 } else {
                     None
                 }
