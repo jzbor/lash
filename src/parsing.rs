@@ -1,4 +1,5 @@
 use std::{collections::VecDeque, fmt::Display};
+use std::path::PathBuf;
 use nom::{
     branch::*,
     bytes::complete::*,
@@ -138,8 +139,7 @@ fn match_application(s: Span) -> IResult<LambdaTree> {
 fn match_directive(s: Span) -> IResult<InterpreterDirective> {
     let (rest, _) = multispace0(s)?;
     let (rest, _) = char('#')(rest)?;
-    let (rest, directive) = match_directive_set(rest)?;
-    // let (rest, directive) = alt((match_directive_set, match_directive_set))(rest)?;
+    let (rest, directive) = alt((match_directive_set, match_directive_include))(rest)?;
 
     Ok((rest, directive))
 }
@@ -152,6 +152,16 @@ fn match_directive_set(s: Span) -> IResult<InterpreterDirective> {
     let (rest, value) = alphanumeric1(rest)?;
 
     Ok((rest, InterpreterDirective::Set(key.to_string(), value.to_string())))
+}
+
+fn match_directive_include(s: Span) -> IResult<InterpreterDirective> {
+    let (rest, _) = tag("include")(s)?;
+    let (rest, _) = space1(rest)?;
+    let (rest, _) = char('\"')(rest)?;
+    let (rest, file_path) = take_until("\"")(rest)?;  // TODO find more robust matcher
+    let (rest, _) = char('\"')(rest)?;
+
+    Ok((rest, InterpreterDirective::Include(PathBuf::from(file_path.to_string()))))
 }
 
 fn match_assignment(s: Span) -> IResult<(String, LambdaTree)> {

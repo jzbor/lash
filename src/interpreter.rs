@@ -20,6 +20,7 @@ pub struct Interpreter {
 #[derive(Debug, Clone)]
 pub enum InterpreterDirective {
     Set(String, String),
+    Include(PathBuf),
 }
 
 
@@ -35,7 +36,12 @@ impl Interpreter {
         use InterpreterDirective::*;
         match directive {
             Set(key, value) => self.set(&key, &value),
+            Include(file) => self.include(file),
         }
+    }
+
+    pub fn include(&mut self, file: PathBuf) -> LashResult<()> {
+        self.interpret_file(file)
     }
 
     pub fn interpret_contents(&mut self, content: &str) -> LashResult<()> {
@@ -86,7 +92,8 @@ impl Interpreter {
     }
 
     pub fn interpret_file(&mut self, file: PathBuf) -> LashResult<()> {
-        let contents = fs::read_to_string(file).unwrap();
+        let contents = fs::read_to_string(&file)
+            .map_err(|e| LashError::new_file_error(file, Some(e)))?;
         self.interpret_contents(&contents)
     }
 
@@ -117,6 +124,7 @@ impl fmt::Display for InterpreterDirective {
         use InterpreterDirective::*;
         match self {
             Set(key, value) => write!(f, "#set {} {}", key, value),
+            Include(file) => write!(f, "#include {}", file.to_string_lossy()),
         }
     }
 }

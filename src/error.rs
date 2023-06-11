@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, path::PathBuf};
 
 use crate::{parsing, r#macro::Macro};
 
@@ -12,6 +12,7 @@ pub struct LashError {
 
 #[derive(Debug,Clone)]
 pub enum LashErrorType {
+    FileError,
     MacroArgError,
     SetKeyError,
     SetValueError,
@@ -19,6 +20,17 @@ pub enum LashErrorType {
 }
 
 impl LashError {
+    pub fn new_file_error(file: PathBuf, error: Option<std::io::Error>) -> Self {
+        let error_msg = match error {
+            Some(e) => format!("({})", e),
+            None => String::new(),
+        };
+        LashError {
+            error_type: LashErrorType::FileError,
+            message: format!("unable to open file '{}' {}", file.to_string_lossy(), error_msg),
+        }
+    }
+
     pub fn new_macro_arg_error(m: Macro, args_given: usize, args_expected: usize) -> Self {
         LashError {
             error_type: LashErrorType::MacroArgError,
@@ -50,6 +62,7 @@ impl Display for LashError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use LashErrorType::*;
         let prefix = match self.error_type {
+            FileError => "File Error",
             MacroArgError => "Macro Argument Error",
             SetKeyError => "Set Key Error",
             SetValueError => "Set Value Error",
