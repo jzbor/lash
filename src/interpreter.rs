@@ -1,7 +1,8 @@
-use std::rc::Rc;
 use std::collections::HashMap;
+use std::fmt;
 use std::fs;
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use crate::error::*;
 use crate::parsing;
@@ -16,12 +17,24 @@ pub struct Interpreter {
     strategy: Strategy,
 }
 
+#[derive(Debug, Clone)]
+pub enum InterpreterDirective {
+    Set(String, String),
+}
+
 
 impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {
             named_terms: HashMap::new(),
             strategy: Strategy::default()
+        }
+    }
+
+    fn apply_directive(&mut self, directive: InterpreterDirective) -> LashResult<()> {
+        use InterpreterDirective::*;
+        match directive {
+            Set(key, value) => self.set(&key, &value),
         }
     }
 
@@ -38,6 +51,7 @@ impl Interpreter {
                     self.named_terms.insert(name.clone(), Rc::new(NamedTerm::new(name, term)));
                 },
                 Lambda(term) => { self.process_lambda_term(term)?; },
+                Directive(directive) => self.apply_directive(directive)?,
             }
         }
 
@@ -54,9 +68,10 @@ impl Interpreter {
             Assignment(name, term) => {
                 let term = self.process_lambda_term(term)?;
                 self.named_terms.insert(name.clone(), Rc::new(NamedTerm::new(name.clone(), term.clone())));
-                Ok(Statement::Assignment(name, term))
+                Ok(Assignment(name, term))
             },
             Lambda(term) => Ok(Statement::Lambda(self.process_lambda_term(term)?)),
+            Directive(directive) => { self.apply_directive(directive)?; Ok(statement) },
         }
     }
 
@@ -75,12 +90,33 @@ impl Interpreter {
         self.interpret_contents(&contents)
     }
 
-    pub fn strategy(&self) -> Strategy {
-        self.strategy
+    pub fn set(&mut self, key: &str, value: &str) -> LashResult<()> {
+        match key {
+            "strategy" => match value {
+                "normal" => self.set_strategy(Strategy::Normal),
+                "applicative" => self.set_strategy(Strategy::Applicative),
+                _ => return Err(LashError::new_set_value_error(value)),
+            },
+            _ => return Err(LashError::new_set_key_error(key)),
+        }
+        Ok(())
     }
 
     pub fn set_strategy(&mut self, strategy: Strategy) {
         self.strategy = strategy;
     }
+
+    pub fn strategy(&self) -> Strategy {
+        self.strategy
+    }
 }
 
+
+impl fmt::Display for InterpreterDirective {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use InterpreterDirective::*;
+        match self {
+            Set(key, value) => write!(f, "#set {} {}", key, value),
+        }
+    }
+}

@@ -12,8 +12,10 @@ pub struct LashError {
 
 #[derive(Debug,Clone)]
 pub enum LashErrorType {
-    SyntaxError,
     MacroArgError,
+    SetKeyError,
+    SetValueError,
+    SyntaxError,
 }
 
 impl LashError {
@@ -21,6 +23,20 @@ impl LashError {
         LashError {
             error_type: LashErrorType::MacroArgError,
             message: format!("macro {} expects {} arguments, but {} were given", m, args_given, args_expected),
+        }
+    }
+
+    pub fn new_set_key_error(key: &str) -> Self {
+        LashError {
+            error_type: LashErrorType::SetKeyError,
+            message: format!("unknown key '{}'", key),
+        }
+    }
+
+    pub fn new_set_value_error(value: &str) -> Self {
+        LashError {
+            error_type: LashErrorType::SetValueError,
+            message: format!("unknown value '{}'", value),
         }
     }
 
@@ -34,8 +50,10 @@ impl Display for LashError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use LashErrorType::*;
         let prefix = match self.error_type {
-            SyntaxError => "Syntax Error",
             MacroArgError => "Macro Argument Error",
+            SetKeyError => "Set Key Error",
+            SetValueError => "Set Value Error",
+            SyntaxError => "Syntax Error",
         };
         write!(f, "{}: {}", prefix, self.message)
     }

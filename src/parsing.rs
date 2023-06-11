@@ -9,7 +9,7 @@ use nom::{
 };
 use nom_locate::LocatedSpan;
 
-use crate::{lambda::*, r#macro::Macro};
+use crate::{lambda::*, r#macro::Macro, interpreter::InterpreterDirective};
 
 
 pub type Span<'a> = LocatedSpan<&'a str>;
@@ -25,6 +25,7 @@ pub struct ParseError<'a> {
 pub enum Statement {
     Assignment(String, LambdaTree),
     Lambda(LambdaTree),
+    Directive(InterpreterDirective),
 }
 
 
@@ -91,7 +92,8 @@ impl Display for Statement {
         use Statement::*;
         match self {
             Assignment(name, term) => write!(f, "{} := {}", name, term),
-            Lambda(term) => write!(f, "{}", term),
+            Lambda(term) => term.fmt(f),
+            Directive(directive) => directive.fmt(f),
         }
     }
 }
@@ -131,6 +133,25 @@ fn match_application(s: Span) -> IResult<LambdaTree> {
     let (rest, terms) = separated_list1(multispace1, match_group)(s)?;
     let node = vec_to_application(terms);
     Ok((rest, node))
+}
+
+fn match_directive(s: Span) -> IResult<InterpreterDirective> {
+    let (rest, _) = multispace0(s)?;
+    let (rest, _) = char('#')(rest)?;
+    let (rest, directive) = match_directive_set(rest)?;
+    // let (rest, directive) = alt((match_directive_set, match_directive_set))(rest)?;
+
+    Ok((rest, directive))
+}
+
+fn match_directive_set(s: Span) -> IResult<InterpreterDirective> {
+    let (rest, _) = tag("set")(s)?;
+    let (rest, _) = space1(rest)?;
+    let (rest, key) = alphanumeric1(rest)?;
+    let (rest, _) = space1(rest)?;
+    let (rest, value) = alphanumeric1(rest)?;
+
+    Ok((rest, InterpreterDirective::Set(key.to_string(), value.to_string())))
 }
 
 fn match_assignment(s: Span) -> IResult<(String, LambdaTree)> {
@@ -192,7 +213,9 @@ fn match_macro_args(s: Span) -> IResult<Vec<LambdaTree>> {
 pub fn match_statement(s: Span, with_semicolon: bool) -> IResult<Statement> {
     let (rest, _) = multispace0(s)?;
     let (rest, statement) = alt((|x| match_assignment(x).map(|(r, (n, l))| (r, Statement::Assignment(n, l))),
-                                 |x| match_lambda(x).map(|(r, l)| (r, Statement::Lambda(l)))))(rest)?;
+                                 |x| match_lambda(x).map(|(r, l)| (r, Statement::Lambda(l))),
+                                 |x| match_directive(x).map(|(r, l)| (r, Statement::Directive(l))),
+                                 ))(rest)?;
     let (rest, _) = multispace0(rest)?;
     let (rest, _) = if with_semicolon {
         (char(';')(rest)?.0, 0)
