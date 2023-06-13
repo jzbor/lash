@@ -1,5 +1,6 @@
 use clap::Parser;
 use interpreter::Interpreter;
+use r#macro::Macro;
 use strategy::Strategy;
 use std::path::PathBuf;
 
@@ -22,10 +23,19 @@ struct Args {
 
     #[clap(long, value_enum, default_value_t = Strategy::Applicative)]
     strategy: Strategy,
+
+    #[clap(long)]
+    print_macros: bool,
 }
 
 fn main() {
     let args = Args::parse();
+
+    if args.print_macros {
+        Macro::print_all();
+        return;
+    }
+
     let mut interpreter = Interpreter::new();
     interpreter.set_strategy(args.strategy);
     interpreter.interpret_std().unwrap();

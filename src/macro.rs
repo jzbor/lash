@@ -19,6 +19,16 @@ impl Macro {
         clap::ValueEnum::from_str(name, false).ok()
     }
 
+    pub fn macros() -> &'static [Self] {
+        clap::ValueEnum::value_variants()
+    }
+
+    pub fn print_all() {
+        for m in Self::macros() {
+            println!("{} \t\t{}", m, m.help());
+        }
+    }
+
     pub fn apply(self, interpreter: &Interpreter, terms: Vec<LambdaTree>) -> LashResult<LambdaTree> {
         use Macro::*;
 
@@ -37,6 +47,17 @@ impl Macro {
         Ok(term)
     }
 
+    fn help(&self) -> &str {
+        use Macro::*;
+        match self {
+            Debug => "print out current term (useful in non-interactive mode)",
+            Normalize => "normalize the given term",
+            VNormalize => "visually normalize the given term",
+            Reduce => "reduce the given term",
+            VReduce => "visually reduce the given term",
+        }
+    }
+
     pub fn nargs(&self) -> usize {
         use Macro::*;
         match self {
@@ -47,6 +68,7 @@ impl Macro {
             VReduce => 1,
         }
     }
+
 }
 
 impl Display for Macro {
