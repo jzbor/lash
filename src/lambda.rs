@@ -155,6 +155,18 @@ impl LambdaTree {
         }
     }
 
+    /// Resolve all named terms
+    pub fn resolve(&self) -> Self {
+        use LambdaNode::*;
+        match self.node() {
+            Abstraction(var, inner_term) => Self::new_abstraction(var.clone(), inner_term.resolve()),
+            Application(left_term, right_term) => Self::new_application(left_term.resolve(), right_term.resolve()),
+            Macro(m, terms) => Self::new_macro(*m, terms.iter().map(|t| t.resolve()).collect()),
+            Variable(_) => self.clone(),
+            Named(term) => term.term().clone(),
+        }
+    }
+
     pub fn substitute(&self, name: &str, term: LambdaTree) -> Self {
         use LambdaNode::*;
         match self.node() {

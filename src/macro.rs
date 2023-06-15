@@ -7,11 +7,13 @@ use crate::{lambda::*, interpreter::Interpreter, error::{LashResult, LashError}}
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 #[clap(rename_all = "lower")]
 pub enum Macro {
+    Dbg,
     Debug,
     N,
     Normalize,
     R,
     Reduce,
+    Resolve,
     VN,
     VNormalize,
     VR,
@@ -41,9 +43,10 @@ impl Macro {
         }
 
         let term = match self {
-            Debug => { println!("{}", terms[0].clone()); terms[0].clone() },
+            Debug | Dbg => { println!("{}", terms[0].clone()); terms[0].clone() },
             Normalize | N => interpreter.strategy().normalize(terms[0].clone(), false),
             Reduce | R => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), false) { reduced } else { terms[0].clone() },
+            Resolve => terms[0].resolve(),
             VNormalize | VN => interpreter.strategy().normalize(terms[0].clone(), true),
             VReduce | VR => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), true) { reduced } else { terms[0].clone() },
         };
@@ -54,11 +57,13 @@ impl Macro {
     fn help(&self) -> &str {
         use Macro::*;
         match self {
+            Dbg => "shortcut for debug",
             Debug => "print out current term (useful in non-interactive mode)",
             N => "shortcut for normalize",
             Normalize => "normalize the given term",
             R => "shortcut for reduce",
             Reduce => "reduce the given term",
+            Resolve => "resolve all named terms",
             VN => "shortcut for vnormalize",
             VNormalize => "visually normalize the given term",
             VR => "shortcut for vreduce",
@@ -69,9 +74,10 @@ impl Macro {
     pub fn nargs(&self) -> usize {
         use Macro::*;
         match self {
-            Debug => 1,
+            Debug | Dbg => 1,
             Normalize | N => 1,
             Reduce | R => 1,
+            Resolve => 1,
             VNormalize | VN => 1,
             VReduce | VR => 1,
         }
