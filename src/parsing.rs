@@ -139,9 +139,21 @@ fn match_application(s: Span) -> IResult<LambdaTree> {
 fn match_directive(s: Span) -> IResult<InterpreterDirective> {
     let (rest, _) = multispace0(s)?;
     let (rest, _) = char('#')(rest)?;
-    let (rest, directive) = alt((match_directive_set, match_directive_include))(rest)?;
+    let (rest, directive) = alt((match_directive_set,
+                                 match_directive_echo,
+                                 match_directive_include))(rest)?;
 
     Ok((rest, directive))
+}
+
+fn match_directive_echo(s: Span) -> IResult<InterpreterDirective> {
+    let (rest, _) = tag("echo")(s)?;
+    let (rest, _) = space1(rest)?;
+    let (rest, _) = char('\"')(rest)?;
+    let (rest, msg) = take_until("\"")(rest)?;  // TODO find more robust matcher
+    let (rest, _) = char('\"')(rest)?;
+
+    Ok((rest, InterpreterDirective::Echo(msg.to_string())))
 }
 
 fn match_directive_set(s: Span) -> IResult<InterpreterDirective> {

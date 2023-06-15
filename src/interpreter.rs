@@ -19,8 +19,9 @@ pub struct Interpreter {
 
 #[derive(Debug, Clone)]
 pub enum InterpreterDirective {
-    Set(String, String),
+    Echo(String),
     Include(PathBuf),
+    Set(String, String),
 }
 
 
@@ -35,6 +36,7 @@ impl Interpreter {
     fn apply_directive(&mut self, directive: InterpreterDirective) -> LashResult<()> {
         use InterpreterDirective::*;
         match directive {
+            Echo(msg) => Ok(println!("{}", msg)),
             Set(key, value) => self.set(&key, &value),
             Include(file) => self.include(file),
         }
@@ -123,8 +125,9 @@ impl fmt::Display for InterpreterDirective {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use InterpreterDirective::*;
         match self {
+            Echo(msg) => write!(f, "#echo \"{}\"", msg),
             Set(key, value) => write!(f, "#set {} {}", key, value),
-            Include(file) => write!(f, "#include {}", file.to_string_lossy()),
+            Include(file) => write!(f, "#include \"{}\"", file.to_string_lossy()),
         }
     }
 }
