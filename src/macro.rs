@@ -8,9 +8,13 @@ use crate::{lambda::*, interpreter::Interpreter, error::{LashResult, LashError}}
 #[clap(rename_all = "lower")]
 pub enum Macro {
     Debug,
+    N,
     Normalize,
-    VNormalize,
+    R,
     Reduce,
+    VN,
+    VNormalize,
+    VR,
     VReduce,
 }
 
@@ -38,10 +42,10 @@ impl Macro {
 
         let term = match self {
             Debug => { println!("{}", terms[0].clone()); terms[0].clone() },
-            Normalize => interpreter.strategy().normalize(terms[0].clone(), false),
-            VNormalize => interpreter.strategy().normalize(terms[0].clone(), true),
-            Reduce => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), false) { reduced } else { terms[0].clone() },
-            VReduce => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), true) { reduced } else { terms[0].clone() },
+            Normalize | N => interpreter.strategy().normalize(terms[0].clone(), false),
+            Reduce | R => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), false) { reduced } else { terms[0].clone() },
+            VNormalize | VN => interpreter.strategy().normalize(terms[0].clone(), true),
+            VReduce | VR => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), true) { reduced } else { terms[0].clone() },
         };
 
         Ok(term)
@@ -51,9 +55,13 @@ impl Macro {
         use Macro::*;
         match self {
             Debug => "print out current term (useful in non-interactive mode)",
+            N => "shortcut for normalize",
             Normalize => "normalize the given term",
-            VNormalize => "visually normalize the given term",
+            R => "shortcut for reduce",
             Reduce => "reduce the given term",
+            VN => "shortcut for vnormalize",
+            VNormalize => "visually normalize the given term",
+            VR => "shortcut for vreduce",
             VReduce => "visually reduce the given term",
         }
     }
@@ -62,10 +70,10 @@ impl Macro {
         use Macro::*;
         match self {
             Debug => 1,
-            Normalize => 1,
-            VNormalize => 1,
-            Reduce => 1,
-            VReduce => 1,
+            Normalize | N => 1,
+            Reduce | R => 1,
+            VNormalize | VN => 1,
+            VReduce | VR => 1,
         }
     }
 
