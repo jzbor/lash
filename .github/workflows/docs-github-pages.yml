@@ -1,0 +1,33 @@
+name: Documentation on Github Pages
+on:
+  push:
+    tags: [ "docs" ]
+
+permissions:
+  pages: write
+  id-token: write
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build docs with cargo
+        uses: ClementTsang/cargo-action@v0.0.3
+        with:
+          command: doc
+          args: --no-deps
+      - name: Create forwarding to actual index.html
+        run: echo '<meta http-equiv="refresh" content="0; url=lash">' > ./target/doc/index.html
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: './target/doc'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
