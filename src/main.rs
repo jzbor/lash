@@ -26,6 +26,9 @@ struct Args {
 
     #[clap(long)]
     print_macros: bool,
+
+    #[clap(long)]
+    std: bool,
 }
 
 fn main() {
@@ -38,7 +41,9 @@ fn main() {
 
     let mut interpreter = Interpreter::new();
     interpreter.set_strategy(args.strategy);
-    interpreter.interpret_std().unwrap();
+    if args.std {
+        interpreter.interpret_std().unwrap();
+    }
 
     if let Some(file) = args.file {
         if let Err(e) = interpreter.interpret_file(file) {

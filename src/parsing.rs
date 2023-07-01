@@ -141,7 +141,8 @@ fn match_directive(s: Span) -> IResult<InterpreterDirective> {
     let (rest, _) = char('#')(rest)?;
     let (rest, directive) = alt((match_directive_set,
                                  match_directive_echo,
-                                 match_directive_include))(rest)?;
+                                 match_directive_include,
+                                 match_directive_usestd))(rest)?;
 
     Ok((rest, directive))
 }
@@ -174,6 +175,11 @@ fn match_directive_include(s: Span) -> IResult<InterpreterDirective> {
     let (rest, _) = char('\"')(rest)?;
 
     Ok((rest, InterpreterDirective::Include(PathBuf::from(file_path.to_string()))))
+}
+
+fn match_directive_usestd(s: Span) -> IResult<InterpreterDirective> {
+    let (rest, _) = tag("usestd")(s)?;
+    Ok((rest, InterpreterDirective::UseStd))
 }
 
 fn match_assignment(s: Span) -> IResult<(String, LambdaTree)> {

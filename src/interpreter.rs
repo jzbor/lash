@@ -22,6 +22,7 @@ pub enum InterpreterDirective {
     Echo(String),
     Include(PathBuf),
     Set(String, String),
+    UseStd,
 }
 
 
@@ -39,6 +40,7 @@ impl Interpreter {
             Echo(msg) => Ok(println!("{}", msg)),
             Set(key, value) => self.set(&key, &value),
             Include(file) => self.include(file),
+            UseStd => self.interpret_std(),
         }
     }
 
@@ -128,6 +130,7 @@ impl fmt::Display for InterpreterDirective {
             Echo(msg) => write!(f, "#echo \"{}\"", msg),
             Set(key, value) => write!(f, "#set {} {}", key, value),
             Include(file) => write!(f, "#include \"{}\"", file.to_string_lossy()),
+            UseStd => write!(f, "#usestd"),
         }
     }
 }
