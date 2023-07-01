@@ -1,0 +1,9 @@
+term1 := (\x y . y x) (y y) z;
+term2 := (\x y . y x) (a a) z;
+
+#echo "This works as expected:";
+!debug (!vnormalize term2);
+
+#echo "";
+#echo "But here we see the necessity of capture avoidance:";
+!debug (!vnormalize term1);

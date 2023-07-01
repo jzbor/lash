@@ -1,0 +1,42 @@
+#set strategy normal;
+
+
+one := !n (SUCC NIL);
+two := !n (SUCC one);
+three := !n (SUCC two);
+iszero := λn.n (λx. FALSE) TRUE;
+
+
+leh := \f x y. IFTHENELSE
+		(OR (iszero x) (iszero y))
+		(iszero x)
+		(f f (PRED x) (PRED y));
+le := leh leh;
+
+
+inserth := \f e l. IFTHENELSE
+		(ISNIL l)
+		(CONS e l)
+		(IFTHENELSE
+			(le e (HEAD l))
+			(CONS e l)
+			(CONS (HEAD l) (f f e (TAIL l)))
+		);
+insert := inserth inserth;
+
+
+sorth := \f l. IFTHENELSE
+		(ISNIL l)
+		NIL
+		(insert (HEAD l) (TAIL l));
+sort := sorth sorth;
+
+
+#echo "";
+#echo "Unsorted list:";
+listunsorted := !dbg (CONS three (CONS one (CONS two NIL)));
+
+#echo "";
+#echo "After sorting:";
+!dbg (!n (sort listunsorted));
+
