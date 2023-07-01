@@ -10,6 +10,9 @@ It is not fully tested yet, but you can help with that :).
 
 There are builtin terms `SUCC` and `NIL` to create natural numbers using church numerals:
 ```
+[λ] @usestd
+@usestd
+
 [λ] one := SUCC NIL
 one := SUCC NIL
 
@@ -22,6 +25,9 @@ two := SUCC (SUCC NIL)
 
 You can select different reduction strategies at runtime:
 ```
+[λ] @usestd
+@usestd
+
 [λ] !vnormalize (AND TRUE FALSE)
 AND TRUE FALSE
 (\q . TRUE q TRUE) FALSE
@@ -29,8 +35,8 @@ AND TRUE FALSE
 (\q . q) FALSE
 FALSE
 
-[λ] #set strategy normal
-#set strategy normal
+[λ] @set strategy normal
+@set strategy normal
 
 [λ] !vnormalize (AND TRUE FALSE)
 AND TRUE FALSE

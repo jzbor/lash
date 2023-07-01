@@ -25,8 +25,9 @@ pub struct ParseError<'a> {
 #[derive(Debug, Clone)]
 pub enum Statement {
     Assignment(String, LambdaTree),
-    Lambda(LambdaTree),
+    Comment,
     Directive(InterpreterDirective),
+    Lambda(LambdaTree),
 }
 
 
@@ -89,6 +90,7 @@ impl Display for Statement {
         use Statement::*;
         match self {
             Assignment(name, term) => write!(f, "{} := {}", name, term),
+            Comment => write!(f, ""),
             Lambda(term) => term.fmt(f),
             Directive(directive) => directive.fmt(f),
         }
@@ -132,9 +134,17 @@ fn match_application(s: Span) -> IResult<LambdaTree> {
     Ok((rest, node))
 }
 
-fn match_directive(s: Span) -> IResult<InterpreterDirective> {
+fn match_comment(s: Span) -> IResult<()> {
     let (rest, _) = multispace0(s)?;
     let (rest, _) = char('#')(rest)?;
+    let (rest, _) = take_till(|c| is_newline(c as u8))(rest)?;
+
+    Ok((rest, ()))
+}
+
+fn match_directive(s: Span) -> IResult<InterpreterDirective> {
+    let (rest, _) = multispace0(s)?;
+    let (rest, _) = char('@')(rest)?;
     let (rest, directive) = alt((match_directive_set,
                                  match_directive_echo,
                                  match_directive_include,
@@ -235,10 +245,24 @@ fn match_macro_args(s: Span) -> IResult<Vec<LambdaTree>> {
 }
 
 pub fn match_statement(s: Span, with_semicolon: bool) -> IResult<Statement> {
+    alt((match_short_statement, |x| match_long_statement(x, with_semicolon)))(s)
+}
+
+pub fn match_short_statement(s: Span) -> IResult<Statement> {
+    let (rest, _) = space0(s)?;
+    let (rest, statement) = alt((|x| match_comment(x).map(|(r, _)| (r, Statement::Comment)),
+                                 |x| match_directive(x).map(|(r, l)| (r, Statement::Directive(l))),
+                                 ))(rest)?;
+    let (rest, _) = space0(rest)?;
+    let (rest, _) = opt(char(';'))(rest)?;
+    let (rest, _) = multispace0(rest)?;
+    Ok((rest, statement))
+}
+
+pub fn match_long_statement(s: Span, with_semicolon: bool) -> IResult<Statement> {
     let (rest, _) = multispace0(s)?;
     let (rest, statement) = alt((|x| match_assignment(x).map(|(r, (n, l))| (r, Statement::Assignment(n, l))),
                                  |x| match_lambda(x).map(|(r, l)| (r, Statement::Lambda(l))),
-                                 |x| match_directive(x).map(|(r, l)| (r, Statement::Directive(l))),
                                  ))(rest)?;
     let (rest, _) = multispace0(rest)?;
     let (rest, _) = if with_semicolon {
@@ -249,6 +273,7 @@ pub fn match_statement(s: Span, with_semicolon: bool) -> IResult<Statement> {
     let (rest, _) = multispace0(rest)?;
     Ok((rest, statement))
 }
+
 
 pub fn match_statements(s: Span) -> IResult<Vec<Statement>> {
     let mut rest = s;

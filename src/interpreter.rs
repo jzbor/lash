@@ -6,7 +6,6 @@ use std::rc::Rc;
 
 use crate::error::*;
 use crate::parsing;
-use crate::parsing::Statement;
 use crate::strategy::Strategy;
 use crate::lambda::*;
 use crate::stdlib::*;
@@ -60,6 +59,7 @@ impl Interpreter {
                     let term = self.process_lambda_term(term)?;
                     self.named_terms.insert(name.clone(), Rc::new(NamedTerm::new(name, term)));
                 },
+                Comment => {},
                 Lambda(term) => { self.process_lambda_term(term)?; },
                 Directive(directive) => self.apply_directive(directive)?,
             }
@@ -80,7 +80,8 @@ impl Interpreter {
                 self.named_terms.insert(name.clone(), Rc::new(NamedTerm::new(name.clone(), term.clone())));
                 Ok(Assignment(name, term))
             },
-            Lambda(term) => Ok(Statement::Lambda(self.process_lambda_term(term)?)),
+            Comment => Ok(Comment),
+            Lambda(term) => Ok(Lambda(self.process_lambda_term(term)?)),
             Directive(directive) => { self.apply_directive(directive)?; Ok(statement) },
         }
     }
@@ -127,10 +128,10 @@ impl fmt::Display for InterpreterDirective {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use InterpreterDirective::*;
         match self {
-            Echo(msg) => write!(f, "#echo \"{}\"", msg),
-            Set(key, value) => write!(f, "#set {} {}", key, value),
-            Include(file) => write!(f, "#include \"{}\"", file.to_string_lossy()),
-            UseStd => write!(f, "#usestd"),
+            Echo(msg) => write!(f, "@echo \"{}\"", msg),
+            Set(key, value) => write!(f, "@set {} {}", key, value),
+            Include(file) => write!(f, "@include \"{}\"", file.to_string_lossy()),
+            UseStd => write!(f, "@usestd"),
         }
     }
 }
