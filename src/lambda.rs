@@ -30,10 +30,6 @@ impl NamedTerm {
         NamedTerm { name, term }
     }
 
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
     pub fn term(&self) -> LambdaTree {
         self.term.clone()
     }
@@ -80,6 +76,17 @@ impl LambdaTree {
         }
     }
 
+    fn contains_free_variable(&self, variable: &str) -> bool {
+        use LambdaNode::*;
+        match self.node() {
+            Abstraction(var, term) => if var == variable { false } else { term.contains_free_variable(variable) },
+            Application(left_term, right_term) => left_term.contains_free_variable(variable) && right_term.contains_free_variable(variable),
+            Variable(var) => var == variable,
+            Macro(_, terms) => terms.iter().any(|t| t.contains_free_variable(variable)),
+            Named(named) => named.term().contains_free_variable(variable),
+        }
+    }
+
     pub fn fmt_with_parenthesis(&self, left_of_appl: bool) -> String {
         if self.needs_parenthesis(left_of_appl) {
             format!("({})", self)
@@ -96,22 +103,6 @@ impl LambdaTree {
     pub fn is_application(&self) -> bool {
         use LambdaNode::*;
         if let Application(..) = self.node() { true } else { false }
-    }
-
-    fn contains_free_variable(&self, variable: &str) -> bool {
-        use LambdaNode::*;
-        match self.node() {
-            Abstraction(var, term) => if var == variable { false } else { term.contains_free_variable(variable) },
-            Application(left_term, right_term) => left_term.contains_free_variable(variable) && right_term.contains_free_variable(variable),
-            Variable(var) => var == variable,
-            Macro(m, terms) => terms.iter().any(|t| t.contains_free_variable(variable)),
-            Named(named) => named.term().contains_free_variable(variable),
-        }
-    }
-
-    pub fn is_macro(&self) -> bool {
-        use LambdaNode::*;
-        if let Macro(..) = self.node() { true } else { false }
     }
 
     pub fn is_named(&self) -> bool {

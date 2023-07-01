@@ -46,10 +46,6 @@ impl<'a> ParseError<'a> {
     pub fn span(&self) -> &Span {
         &self.span
     }
-
-    pub fn message(&self) -> String {
-        self.message.clone()
-    }
 }
 
 
