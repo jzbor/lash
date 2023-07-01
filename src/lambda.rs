@@ -98,6 +98,17 @@ impl LambdaTree {
         if let Application(..) = self.node() { true } else { false }
     }
 
+    fn contains_free_variable(&self, variable: &str) -> bool {
+        use LambdaNode::*;
+        match self.node() {
+            Abstraction(var, term) => if var == variable { false } else { term.contains_free_variable(variable) },
+            Application(left_term, right_term) => left_term.contains_free_variable(variable) && right_term.contains_free_variable(variable),
+            Variable(var) => var == variable,
+            Macro(m, terms) => terms.iter().any(|t| t.contains_free_variable(variable)),
+            Named(named) => named.term().contains_free_variable(variable),
+        }
+    }
+
     pub fn is_macro(&self) -> bool {
         use LambdaNode::*;
         if let Macro(..) = self.node() { true } else { false }
@@ -172,9 +183,21 @@ impl LambdaTree {
         match self.node() {
             Abstraction(var, inner_term) => {
                 if var == name {
-                    Self::new_abstraction(var.clone(), inner_term.clone())
+                    self.clone()
                 } else {
-                    Self::new_abstraction(var.clone(), inner_term.substitute(name, term.clone()))
+                    // avoid capturing free variables
+                    if term.contains_free_variable(var) {
+                        let mut fresh_var = var.to_owned();
+                        while term.contains_free_variable(&fresh_var) {
+                            fresh_var = format!("{}'", fresh_var);
+                        }
+                        let new_inner = inner_term
+                            .substitute(var, Self::new_variable(fresh_var.clone()))
+                            .substitute(name, term.clone());
+                        Self::new_abstraction(fresh_var, new_inner)
+                    } else {
+                        Self::new_abstraction(var.clone(), inner_term.substitute(name, term.clone()))
+                    }
                 }
             },
             Application(left_term, right_term) => {
