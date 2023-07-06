@@ -5,6 +5,7 @@
 one := !n (SUCC NIL);
 two := !n (SUCC one);
 three := !n (SUCC two);
+four := !n (SUCC three);
 iszero := λn.n (λx. FALSE) TRUE;
 
 
@@ -29,13 +30,13 @@ insert := inserth inserth;
 sorth := \f l. IFTHENELSE
 		(ISNIL l)
 		NIL
-		(insert (HEAD l) (TAIL l));
+		(insert (HEAD l) (f f (TAIL l)));
 sort := sorth sorth;
 
 
 @echo ""
 @echo "Unsorted list:"
-listunsorted := !dbg (CONS three (CONS one (CONS two NIL)));
+listunsorted := !dbg (!n (CONS three (CONS one (CONS four ((CONS two NIL))))));
 
 @echo ""
 @echo "After sorting:"
