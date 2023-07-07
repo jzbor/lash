@@ -6,4 +6,5 @@ src = "src"
 title = "Lambda Shell"
 
 [output.html]
-default-theme = "ayu"
+default-theme = "rust"
+preferred-dark-theme = "ayu"
