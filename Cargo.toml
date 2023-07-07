@@ -13,6 +13,6 @@ rustyline = "10.0.0"
 nom = "7"
 nom_locate = "4.0.0"
 clap = { version = "4.3.11", features = ["derive"] }
-colored = "2.0.0"
+colored = "2.0.4"
 serde = { version = "1.0.164", features = ["derive"] }
 serde_yaml = "0.9.21"
