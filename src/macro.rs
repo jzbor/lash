@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use clap::ArgEnum;
+use clap::ValueEnum;
 
 use crate::{lambda::*, interpreter::Interpreter, error::{LashResult, LashError}};
 
