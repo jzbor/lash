@@ -40,5 +40,5 @@ listunsorted := !dbg (!n (CONS three (CONS one (CONS four ((CONS two NIL))))));
 
 @echo ""
 @echo "After sorting:"
-!dbg (!n (sort listunsorted));
+!dbg (!time (!n (sort listunsorted)));
 

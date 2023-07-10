@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::rc::Rc;
+use std::time::Instant;
 
 use crate::interpreter::Interpreter;
 use crate::r#macro::Macro;
@@ -64,12 +65,14 @@ impl LambdaTree {
                 => Ok(Self::new_application(left_term.apply_macros(interpreter)?, right_term.apply_macros(interpreter)?)),
             Variable(_) => Ok(self.clone()),
             Macro(m, terms) => {
+                let time_start = Instant::now();
                 let terms = terms.iter().map(|m| m.apply_macros(interpreter)).collect::<Vec<LashResult<LambdaTree>>>();
+                let duration = time_start.elapsed();
                 if let Some(e) = terms.iter().find(|r| (&r).is_err()) {
                     e.clone()
                 } else {
                     let terms = terms.iter().flatten().cloned().collect();
-                    m.apply(interpreter, terms)
+                    m.apply(interpreter, terms, duration)
                 }
             } ,
             Named(_) => Ok(self.clone()),

@@ -1,4 +1,6 @@
+use humantime::format_duration;
 use std::fmt::Display;
+use std::time::Duration;
 
 use clap::ValueEnum;
 
@@ -14,6 +16,7 @@ pub enum Macro {
     R,
     Reduce,
     Resolve,
+    Time,
     VN,
     VNormalize,
     VR,
@@ -35,7 +38,7 @@ impl Macro {
         }
     }
 
-    pub fn apply(self, interpreter: &Interpreter, terms: Vec<LambdaTree>) -> LashResult<LambdaTree> {
+    pub fn apply(self, interpreter: &Interpreter, terms: Vec<LambdaTree>, duration: Duration) -> LashResult<LambdaTree> {
         use Macro::*;
 
         if terms.len() != self.nargs() {
@@ -47,6 +50,7 @@ impl Macro {
             Normalize | N => interpreter.strategy().normalize(terms[0].clone(), false),
             Reduce | R => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), false) { reduced } else { terms[0].clone() },
             Resolve => terms[0].resolve(),
+            Time => { println!("Time elapsed: {}", format_duration(Duration::from_millis(duration.as_millis() as u64))); terms[0].clone() },
             VNormalize | VN => interpreter.strategy().normalize(terms[0].clone(), true),
             VReduce | VR => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), true) { reduced } else { terms[0].clone() },
         };
@@ -64,6 +68,7 @@ impl Macro {
             R => "shortcut for reduce",
             Reduce => "reduce the given term",
             Resolve => "resolve all named terms",
+            Time => "time the execution of a term (helpful with other macros)",
             VN => "shortcut for vnormalize",
             VNormalize => "visually normalize the given term",
             VR => "shortcut for vreduce",
@@ -78,6 +83,7 @@ impl Macro {
             Normalize | N => 1,
             Reduce | R => 1,
             Resolve => 1,
+            Time => 1,
             VNormalize | VN => 1,
             VReduce | VR => 1,
         }

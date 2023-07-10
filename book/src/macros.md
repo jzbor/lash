@@ -9,6 +9,7 @@ Macros are only evaluated once when the term is initially parsed, after that tey
 * `!normalize` - reduce the term until it cannot be reduced further (this is the so-called normal form)
 * `!reduce` - execute one reduction step on the argument term
 * `!resolve` - resolve named terms
+* `!time` - time the macro execution of term inside
 * `!vnormalize`/`!vreduce` - like `!normalize` and `!reduce`, but prints the reduction steps
 
 ## Examples

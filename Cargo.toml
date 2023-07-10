@@ -16,3 +16,4 @@ clap = { version = "4.3.11", features = ["derive"] }
 colored = "2.0.4"
 serde = { version = "1.0.164", features = ["derive"] }
 serde_yaml = "0.9.21"
+humantime = "2.1.0"
