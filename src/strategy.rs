@@ -12,13 +12,15 @@ pub enum Strategy {
 }
 
 impl Strategy {
-    pub fn normalize(&self, term: LambdaTree, verbose: bool) -> LambdaTree {
+    pub fn normalize(&self, term: LambdaTree, verbose: bool) -> (LambdaTree, usize) {
         let mut current = term;
+        let mut nreductions = 0;
         loop {
             if let Some(next) = self.reduce(current.clone(), verbose) {
                 current = next;
+                nreductions += 1;
             } else {
-                return current;
+                return (current, nreductions);
             }
         }
     }

@@ -9,6 +9,8 @@ use crate::{lambda::*, interpreter::Interpreter, error::{LashResult, LashError}}
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 #[clap(rename_all = "lower")]
 pub enum Macro {
+    CN,
+    CNormalize,
     Dbg,
     Debug,
     N,
@@ -46,13 +48,32 @@ impl Macro {
         }
 
         let term = match self {
-            Debug | Dbg => { println!("{}", terms[0].clone()); terms[0].clone() },
-            Normalize | N => interpreter.strategy().normalize(terms[0].clone(), false),
-            Reduce | R => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), false) { reduced } else { terms[0].clone() },
+            CNormalize | CN => {
+                let (term, count) = interpreter.strategy().normalize(terms[0].clone(), false);
+                println!("Number of reductions: {}", count);
+                term
+            },
+            Debug | Dbg => {
+                println!("{}", terms[0].clone());
+                terms[0].clone()
+            },
+            Normalize | N => interpreter.strategy().normalize(terms[0].clone(), false).0,
+            Reduce | R => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), false) {
+                reduced
+            } else {
+                terms[0].clone()
+            },
             Resolve => terms[0].resolve(),
-            Time => { println!("Time elapsed: {}", format_duration(Duration::from_millis(duration.as_millis() as u64))); terms[0].clone() },
-            VNormalize | VN => interpreter.strategy().normalize(terms[0].clone(), true),
-            VReduce | VR => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), true) { reduced } else { terms[0].clone() },
+            Time => {
+                println!("Time elapsed: {}", format_duration(Duration::from_millis(duration.as_millis() as u64)));
+                terms[0].clone()
+            },
+            VNormalize | VN => interpreter.strategy().normalize(terms[0].clone(), true).0,
+            VReduce | VR => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), true) {
+                reduced
+            } else {
+                terms[0].clone()
+            },
         };
 
         Ok(term)
@@ -61,6 +82,8 @@ impl Macro {
     fn help(&self) -> &str {
         use Macro::*;
         match self {
+            CN => "shortcut for cnormalize",
+            CNormalize => "normalize and show number of reductions performed",
             Dbg => "shortcut for debug",
             Debug => "print out current term (useful in non-interactive mode)",
             N => "shortcut for normalize",
@@ -68,7 +91,7 @@ impl Macro {
             R => "shortcut for reduce",
             Reduce => "reduce the given term",
             Resolve => "resolve all named terms",
-            Time => "time the execution of a term (helpful with other macros)",
+            Time => "time the execution of the macros contained inside the term",
             VN => "shortcut for vnormalize",
             VNormalize => "visually normalize the given term",
             VR => "shortcut for vreduce",
@@ -79,6 +102,7 @@ impl Macro {
     pub fn nargs(&self) -> usize {
         use Macro::*;
         match self {
+            CNormalize | CN => 1,
             Debug | Dbg => 1,
             Normalize | N => 1,
             Reduce | R => 1,

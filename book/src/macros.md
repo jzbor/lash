@@ -5,6 +5,7 @@ For example you might want to print out a term, resolve its named terms or reduc
 Macros are only evaluated once when the term is initially parsed, after that tey are just replaced with the terms they return.
 
 ## Available Macros:
+* `!cnormalize` - like `!normalize` but shows number of reductions performed
 * `!debug` - prints out the argument term
 * `!normalize` - reduce the term until it cannot be reduced further (this is the so-called normal form)
 * `!reduce` - execute one reduction step on the argument term
