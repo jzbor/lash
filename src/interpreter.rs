@@ -104,10 +104,9 @@ impl Interpreter {
 
     pub fn set(&mut self, key: &str, value: &str) -> LashResult<()> {
         match key {
-            "strategy" => match value {
-                "normal" => self.set_strategy(Strategy::Normal),
-                "applicative" => self.set_strategy(Strategy::Applicative),
-                _ => return Err(LashError::new_set_value_error(value)),
+            "strategy" => match clap::ValueEnum::from_str(value, false).ok() {
+                Some(strat) => self.set_strategy(strat),
+                None => return Err(LashError::new_set_value_error(value)),
             },
             _ => return Err(LashError::new_set_key_error(key)),
         }
