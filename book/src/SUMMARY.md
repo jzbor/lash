@@ -5,6 +5,7 @@
 	- [Macros](./macros.md)
 	- [Directives](./directives.md)
 	- [Strategies](./strategies.md)
+	- [Church Encodings](./church.md)
 - [Further Reading](./further_reading.md)
 
 
