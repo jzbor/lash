@@ -3,6 +3,7 @@ use std::fmt;
 use std::fs;
 use std::path::PathBuf;
 use std::rc::Rc;
+use std::str;
 
 use crate::error::*;
 use crate::parsing;
@@ -12,6 +13,7 @@ use crate::stdlib::*;
 
 
 pub struct Interpreter {
+    church_num_enabled: bool,
     named_terms: HashMap<String, Rc<NamedTerm>>,
     strategy: Strategy,
 }
@@ -28,6 +30,7 @@ pub enum InterpreterDirective {
 impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {
+            church_num_enabled: false,
             named_terms: HashMap::new(),
             strategy: Strategy::default()
         }
@@ -91,6 +94,10 @@ impl Interpreter {
     }
 
     fn process_lambda_term(&self, term: LambdaTree) -> LashResult<LambdaTree> {
+        if !self.church_num_enabled && term.has_church_nums() {
+            return Err(LashError::new_church_num_error());
+        }
+
         let with_named = term.set_named_terms(&self.named_terms);
         let with_macros = with_named.apply_macros(self)?;
         Ok(with_macros)
@@ -108,9 +115,18 @@ impl Interpreter {
                 Some(strat) => self.set_strategy(strat),
                 None => return Err(LashError::new_set_value_error(value)),
             },
+            "numerals" => match str::parse(value).ok() {
+                Some(b) => self.set_church_num_enabled(b),
+                None => return Err(LashError::new_set_value_error(value)),
+            },
             _ => return Err(LashError::new_set_key_error(key)),
         }
         Ok(())
+    }
+
+
+    pub fn set_church_num_enabled(&mut self, b: bool) {
+        self.church_num_enabled = b;
     }
 
     pub fn set_strategy(&mut self, strategy: Strategy) {

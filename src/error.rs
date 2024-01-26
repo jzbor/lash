@@ -12,6 +12,7 @@ pub struct LashError {
 
 #[derive(Debug,Clone)]
 pub enum LashErrorType {
+    ChurchNumError,
     FileError,
     MacroArgError,
     SetKeyError,
@@ -20,6 +21,13 @@ pub enum LashErrorType {
 }
 
 impl LashError {
+    pub fn new_church_num_error() -> Self {
+        LashError {
+            error_type: LashErrorType::ChurchNumError,
+            message: "church numerals disabled".to_owned(),
+        }
+    }
+
     pub fn new_file_error(file: PathBuf, error: Option<std::io::Error>) -> Self {
         let error_msg = match error {
             Some(e) => format!("({})", e),
@@ -62,6 +70,7 @@ impl Display for LashError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use LashErrorType::*;
         let prefix = match self.error_type {
+            ChurchNumError => "Church Numeral Error",
             FileError => "File Error",
             MacroArgError => "Macro Argument Error",
             SetKeyError => "Set Key Error",

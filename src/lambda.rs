@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::rc::Rc;
+use std::str;
 use std::time::Instant;
 
 use crate::interpreter::Interpreter;
@@ -15,6 +16,7 @@ pub enum LambdaNode {
     Macro(Macro, Vec<LambdaTree>),
     Named(Rc<NamedTerm>),
     Variable(String),
+    ChurchNum(u32),
 }
 
 #[derive(Clone, Debug)]
@@ -47,6 +49,11 @@ impl LambdaTree {
         LambdaTree(Rc::new(Application(left_term, right_term)))
     }
 
+    pub fn new_church_num(denominator: u32) -> Self {
+        use LambdaNode::*;
+        LambdaTree(Rc::new(ChurchNum(denominator)))
+    }
+
     pub fn new_macro(m: Macro, terms: Vec<Self>) -> Self {
         use LambdaNode::*;
         LambdaTree(Rc::new(Macro(m, terms)))
@@ -75,7 +82,7 @@ impl LambdaTree {
                     m.apply(interpreter, terms, duration)
                 }
             } ,
-            Named(_) => Ok(self.clone()),
+            Named(_) | ChurchNum(_) => Ok(self.clone()),
         }
     }
 
@@ -87,6 +94,7 @@ impl LambdaTree {
             Variable(var) => var == variable,
             Macro(_, terms) => terms.iter().any(|t| t.contains_free_variable(variable)),
             Named(named) => named.term().contains_free_variable(variable),
+            ChurchNum(_) => false,
         }
     }
 
@@ -95,6 +103,18 @@ impl LambdaTree {
             format!("({})", self)
         } else {
             format!("{}", self)
+        }
+    }
+
+    pub fn has_church_nums(&self) -> bool {
+        use LambdaNode::*;
+        match self.node() {
+            Abstraction(_, term) => term.has_church_nums(),
+            Application(left_term, right_term) => left_term.has_church_nums() || right_term.has_church_nums(),
+            Variable(_) => false,
+            Macro(_, terms) => terms.iter().any(|t| t.has_church_nums()),
+            Named(named) => named.term().has_church_nums(),
+            ChurchNum(_) => true,
         }
     }
 
@@ -108,6 +128,11 @@ impl LambdaTree {
         matches!(self.node(), Application(..))
     }
 
+    pub fn is_church_num(&self) -> bool {
+        use LambdaNode::*;
+        matches!(self.node(), ChurchNum(..))
+    }
+
     pub fn is_named(&self) -> bool {
         use LambdaNode::*;
         matches!(self.node(), Named(..))
@@ -119,7 +144,7 @@ impl LambdaTree {
     }
 
     pub fn needs_parenthesis(&self, left_of_appl: bool) -> bool {
-        !(self.is_named() || self.is_variable() || (left_of_appl && self.is_application()))
+        !(self.is_named() || self.is_variable() || self.is_church_num() || (left_of_appl && self.is_application()))
     }
 
     pub fn node(&self) -> &LambdaNode {
@@ -156,7 +181,7 @@ impl LambdaTree {
             },
             Macro(m, terms) => Self::new_macro(*m, terms.iter()
                                                .map(|t| t.set_named_terms_helper(named_terms, bound_vars)).collect()),
-            Named(_) => self.clone(),
+            Named(_) | ChurchNum(_) => self.clone(),
         }
     }
 
@@ -169,6 +194,7 @@ impl LambdaTree {
             Macro(m, terms) => Self::new_macro(*m, terms.iter().map(|t| t.resolve()).collect()),
             Variable(_) => self.clone(),
             Named(term) => term.term().resolve(),
+            ChurchNum(d) => Self::unwrap_church_num(*d),
         }
     }
 
@@ -207,8 +233,16 @@ impl LambdaTree {
                 }
             },
             Macro(m, terms) => Self::new_macro(*m, terms.iter().map(|t| t.substitute(name, term.clone())).collect()),
-            Named(_) => self.clone(),
+            Named(_) | ChurchNum(_) => self.clone(),
         }
+    }
+
+    pub fn unwrap_church_num(denominator: u32) ->  Self {
+        let mut inner = Self::new_variable("x".to_string());
+        for _ in 0..denominator {
+            inner = Self::new_application(Self::new_variable("f".to_string()), inner);
+        }
+        Self::new_abstraction("f".to_owned(), Self::new_abstraction("x".to_string(), inner))
     }
 }
 
@@ -236,6 +270,7 @@ impl Display for LambdaTree {
                 Ok(())
             }
             Named(named) => write!(f, "{}", named.name),
+            ChurchNum(d) => write!(f, "${}", d),
         }
 
     }

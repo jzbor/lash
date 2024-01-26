@@ -1,3 +1,4 @@
+use std::str;
 use std::{collections::VecDeque, fmt::Display};
 use std::path::PathBuf;
 use nom::{
@@ -134,6 +135,16 @@ fn match_application(s: Span) -> IResult<LambdaTree> {
     Ok((rest, node))
 }
 
+fn match_church(s: Span) -> IResult<LambdaTree> {
+    let (rest, _) = with_err(char('$')(s), s,
+                             "expected '$' as prefix for church numerals".to_owned())?;
+    let (rest, digits) = with_err(recognize(digit1)(rest), rest,
+                             "church numeral without denominator".to_owned())?;
+    let denominator = str::parse(&digits)
+        .map_err(|_| nom::Err::Error(ParseError::new(format!("illegal church denominator '{digits}'"), s)))?;
+    Ok((rest, LambdaTree::new_church_num(denominator)))
+}
+
 fn match_comment(s: Span) -> IResult<()> {
     let (rest, _) = multispace0(s)?;
     let (rest, _) = char('#')(rest)?;
@@ -208,7 +219,7 @@ fn match_bracketed(s: Span) -> IResult<LambdaTree> {
 }
 
 fn match_group(s: Span) -> IResult<LambdaTree> {
-    alt((match_variable, match_bracketed))(s)
+    alt((match_variable, match_church, match_bracketed,))(s)
 }
 
 pub fn match_lambda(s: Span) -> IResult<LambdaTree> {

@@ -62,6 +62,13 @@ impl Strategy {
                     }
                 }
 
+                if let ChurchNum(d) = left_term.node() {
+                    if let Abstraction(var_name, inner_term) = LambdaTree::unwrap_church_num(*d).node() {
+                        let string = Self::reduction_format_redex(left_term, right_term, verbose);
+                        return Some((inner_term.substitute(var_name, right_term.clone()), string));
+                    }
+                }
+
                 if left_term.is_abstraction() {
                     None
                 } else if let Some((left_reduced, left_string)) = left_option {
@@ -77,6 +84,7 @@ impl Strategy {
             Variable(_) => None,
             Macro(..) => panic!(),
             Named(named) => Self::reduce_normal(named.term(), verbose),
+            ChurchNum(d) => Self::reduce_normal(LambdaTree::unwrap_church_num(*d), verbose),
         }
     }
 
@@ -108,6 +116,13 @@ impl Strategy {
                     }
                 }
 
+                if let ChurchNum(d) = left_term.node() {
+                    if let Abstraction(var_name, inner_term) = LambdaTree::unwrap_church_num(*d).node() {
+                        let string = Self::reduction_format_redex(left_term, right_term, verbose);
+                        return Some((inner_term.substitute(var_name, right_term.clone()), string));
+                    }
+                }
+
                 if left_term.is_abstraction() {
                     None
                 } else if let Some((left_reduced, left_string)) = left_option {
@@ -123,6 +138,7 @@ impl Strategy {
             Variable(_) => None,
             Macro(..) => panic!(),
             Named(named) => Self::reduce_normal(named.term(), verbose),
+            ChurchNum(d) => Self::reduce_normal(LambdaTree::unwrap_church_num(*d), verbose),
         }
     }
 
@@ -157,6 +173,13 @@ impl Strategy {
                     }
                 }
 
+                if let ChurchNum(d) = left_term.node() {
+                    if let Abstraction(var_name, inner_term) = LambdaTree::unwrap_church_num(*d).node() {
+                        let string = Self::reduction_format_redex(left_term, right_term, verbose);
+                        return Some((inner_term.substitute(var_name, right_term.clone()), string));
+                    }
+                }
+
                 if let Some((left_reduced, left_string)) = left_option {
                     let string = Self::reduction_format_application(left_term.clone(), left_string, right_term.clone(), None, verbose);
                     Some((LambdaTree::new_application(left_reduced, right_term.clone()), string))
@@ -170,6 +193,7 @@ impl Strategy {
             Variable(_) => None,
             Macro(..) => panic!(),
             Named(named) => Self::reduce_applicative(named.term(), verbose),
+            ChurchNum(d) => Self::reduce_applicative(LambdaTree::unwrap_church_num(*d), verbose),
         }
     }
 

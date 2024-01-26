@@ -29,6 +29,9 @@ struct Args {
 
     #[clap(long)]
     std: bool,
+
+    #[clap(long)]
+    church_nums: bool,
 }
 
 fn main() {
@@ -41,6 +44,7 @@ fn main() {
 
     let mut interpreter = Interpreter::new();
     interpreter.set_strategy(args.strategy);
+    interpreter.set_church_num_enabled(args.church_nums);
     if args.std {
         interpreter.interpret_std().unwrap();
     }
