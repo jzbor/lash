@@ -300,7 +300,7 @@ pub fn match_variable(s: Span) -> IResult<LambdaTree> {
     Ok((rest, LambdaTree::new_variable(name.to_owned())))
 }
 
-fn match_variable_list<'a>(s: Span<'a>) -> IResult<Vec<&'a str>> {
+fn match_variable_list(s: Span<'_>) -> IResult<Vec<&str>> {
     let mut rest = s;
     let mut variables = Vec::new();
 
@@ -325,7 +325,7 @@ fn match_variable_list<'a>(s: Span<'a>) -> IResult<Vec<&'a str>> {
 
     Ok((rest, variables))
 }
-pub fn match_variable_name<'a>(s: Span<'a>) -> IResult<&'a str> {
+pub fn match_variable_name(s: Span<'_>) -> IResult<&str> {
     let (rest, name) = take_while1(|x| is_alphanumeric(x as u8) || x == '-' || x == '_' || x == '\'')(s)?;
     Ok((rest, *name))
 }

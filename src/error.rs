@@ -76,7 +76,7 @@ impl From<nom::Err<parsing::ParseError<'_>>> for LashError {
     fn from(value: nom::Err<parsing::ParseError<'_>>) -> Self {
         use nom::Err::*;
         let message = match value {
-            Incomplete(_) => format!("incomplete data"),
+            Incomplete(_) => "incomplete data".to_owned(),
             Error(e) => format!("{}", e),
             Failure(e) => format!("{}", e),
         };

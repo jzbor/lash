@@ -68,7 +68,7 @@ impl LambdaTree {
                 let time_start = Instant::now();
                 let terms = terms.iter().map(|m| m.apply_macros(interpreter)).collect::<Vec<LashResult<LambdaTree>>>();
                 let duration = time_start.elapsed();
-                if let Some(e) = terms.iter().find(|r| (&r).is_err()) {
+                if let Some(e) = terms.iter().find(|r| r.is_err()) {
                     e.clone()
                 } else {
                     let terms = terms.iter().flatten().cloned().collect();
@@ -100,22 +100,22 @@ impl LambdaTree {
 
     pub fn is_abstraction(&self) -> bool {
         use LambdaNode::*;
-        if let Abstraction(..) = self.node() { true } else { false }
+        matches!(self.node(), Abstraction(..))
     }
 
     pub fn is_application(&self) -> bool {
         use LambdaNode::*;
-        if let Application(..) = self.node() { true } else { false }
+        matches!(self.node(), Application(..))
     }
 
     pub fn is_named(&self) -> bool {
         use LambdaNode::*;
-        if let Named(..) = self.node() { true } else { false }
+        matches!(self.node(), Named(..))
     }
 
     pub fn is_variable(&self) -> bool {
         use LambdaNode::*;
-        if let Variable(..) = self.node() { true } else { false }
+        matches!(self.node(), Variable(..))
     }
 
     pub fn needs_parenthesis(&self, left_of_appl: bool) -> bool {
@@ -217,7 +217,7 @@ impl Display for LambdaTree {
         use LambdaNode::*;
         match self.node() {
             Abstraction(var_name, term) => {
-                write!(f, "{}{} . ", '\\', var_name)?;
+                write!(f, "\\{} . ", var_name)?;
                 term.fmt(f)
             },
             Application(term1, term2) => {

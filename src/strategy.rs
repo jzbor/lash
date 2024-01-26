@@ -51,13 +51,13 @@ impl Strategy {
                 let right_option = Self::reduce_normal(right_term.clone(), verbose);
 
                 if let Abstraction(var_name, inner_term) = left_term.node() {
-                    let string = Self::reduction_format_redex(&left_term, &right_term, verbose);
+                    let string = Self::reduction_format_redex(left_term, right_term, verbose);
                     return Some((inner_term.substitute(var_name, right_term.clone()), string));
                 }
 
                 if let Named(named) = left_term.node() {
                     if let Abstraction(var_name, inner_term) = named.term().node() {
-                        let string = Self::reduction_format_redex(&left_term, &right_term, verbose);
+                        let string = Self::reduction_format_redex(left_term, right_term, verbose);
                         return Some((inner_term.substitute(var_name, right_term.clone()), string));
                     }
                 }
@@ -97,13 +97,13 @@ impl Strategy {
                 let right_option = Self::reduce_normal(right_term.clone(), verbose);
 
                 if let Abstraction(var_name, inner_term) = left_term.node() {
-                    let string = Self::reduction_format_redex(&left_term, &right_term, verbose);
+                    let string = Self::reduction_format_redex(left_term, right_term, verbose);
                     return Some((inner_term.substitute(var_name, right_term.clone()), string));
                 }
 
                 if let Named(named) = left_term.node() {
                     if let Abstraction(var_name, inner_term) = named.term().node() {
-                        let string = Self::reduction_format_redex(&left_term, &right_term, verbose);
+                        let string = Self::reduction_format_redex(left_term, right_term, verbose);
                         return Some((inner_term.substitute(var_name, right_term.clone()), string));
                     }
                 }
@@ -145,14 +145,14 @@ impl Strategy {
                 if let Abstraction(var_name, inner_term) = left_term.node() {
                     let inner_reduced = Self::reduce_applicative(inner_term.clone(), verbose);
                     if inner_reduced.is_none() && right_option.is_none() {
-                        let string = Self::reduction_format_redex(&left_term, &right_term, verbose);
+                        let string = Self::reduction_format_redex(left_term, right_term, verbose);
                         return Some((inner_term.substitute(var_name, right_term.clone()), string));
                     }
                 }
 
                 if let Named(named) = left_term.node() {
                     if let Abstraction(var_name, inner_term) = named.term().node() {
-                        let string = Self::reduction_format_redex(&left_term, &right_term, verbose);
+                        let string = Self::reduction_format_redex(left_term, right_term, verbose);
                         return Some((inner_term.substitute(var_name, right_term.clone()), string));
                     }
                 }
