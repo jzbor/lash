@@ -20,6 +20,7 @@ Directives in the included file might also have an effect on following code, so 
 Set compiler behavior with this directive.
 Settings you can use are:
 * `strategy normal|applicative` - changes the reduction strategy (see [Strategies](./strategies.md))
+* `numerals true|false` - enable or disable church numerals
 
 ### `@usestd`
 There is a **unstable** standard library, which is a collection of a few useful terms.
