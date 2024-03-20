@@ -1,7 +1,7 @@
 name: Documentation on Github Pages
 on:
   push:
-    tags: [ "docs" ]
+    tags:
 
 permissions:
   pages: write
