@@ -21,18 +21,23 @@ const DOCS_URL: &str = "https://jzbor.de/lash";
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
+    /// Evaluate lambda shell file
     #[clap()]
     file: Option<PathBuf>,
 
+    /// Set initial strategy
     #[clap(long, value_enum, default_value_t = Strategy::Applicative)]
     strategy: Strategy,
 
+    /// Print available macros and exit
     #[clap(long)]
     print_macros: bool,
 
+    /// Add std terms to the environment
     #[clap(long)]
     std: bool,
 
+    /// Enable church numerals
     #[clap(long)]
     church_nums: bool,
 
