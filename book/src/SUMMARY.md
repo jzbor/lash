@@ -1,5 +1,6 @@
 # Summary
 
+- [Introduction](./README.md)
 - [Installation](./installation.md)
 - [The Language](./language.md)
 	- [Untyped Lambda Calculus](./lambda.md)
