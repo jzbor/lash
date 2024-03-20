@@ -15,6 +15,9 @@ mod stdlib;
 mod strategy;
 
 
+const DOCS_URL: &str = "https://jzbor.de/lash";
+
+
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
@@ -32,12 +35,25 @@ struct Args {
 
     #[clap(long)]
     church_nums: bool,
+
+    /// Open documentation in the browser
+    #[clap(long)]
+    docs: bool,
 }
 
 fn main() {
     let args = Args::parse();
 
-    if args.print_macros {
+    if args.docs {
+        let result = std::process::Command::new("xdg-open")
+            .arg(DOCS_URL)
+            .spawn();
+        match result {
+            Ok(_) => (),
+            Err(e) => { eprintln!("Error: {}", e); std::process::exit(1); }
+        }
+        return;
+    } else if args.print_macros {
         Macro::print_all();
         return;
     }
