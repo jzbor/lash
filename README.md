@@ -51,3 +51,6 @@ FALSE
 * capture-avoiding substitution
 * simple constructs provided via builtins
 * macros for processing lambda terms
+
+## Installation
+[You can find more information about installation and building from source here.](https://jzbor.de/lash/installation.html)
