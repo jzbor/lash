@@ -7,6 +7,7 @@ Macros are only evaluated once when the term is initially parsed, after that tey
 ## Available Macros:
 * `!cnormalize` - like `!normalize` but shows number of reductions performed
 * `!debug` - prints out the argument term
+* `!macros` - prints available macros
 * `!normalize` - reduce the term until it cannot be reduced further (this is the so-called normal form)
 * `!reduce` - execute one reduction step on the argument term
 * `!resolve` - resolve named terms and church numerals

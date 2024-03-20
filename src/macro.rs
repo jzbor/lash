@@ -13,6 +13,7 @@ pub enum Macro {
     CNormalize,
     Dbg,
     Debug,
+    Macros,
     N,
     Normalize,
     R,
@@ -36,7 +37,7 @@ impl Macro {
 
     pub fn print_all() {
         for m in Self::macros() {
-            println!("{} \t\t{}", m, m.help());
+            println!("{: <8} \t{}", m.to_string(), m.help());
         }
     }
 
@@ -57,6 +58,7 @@ impl Macro {
                 println!("{}", terms[0].clone());
                 terms[0].clone()
             },
+            Macros => { Self::print_all(); LambdaTree::new_macro(self, terms) },
             Normalize | N => interpreter.strategy().normalize(terms[0].clone(), false).0,
             Reduce | R => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), false) {
                 reduced
@@ -86,6 +88,7 @@ impl Macro {
             CNormalize => "normalize and show number of reductions performed",
             Dbg => "shortcut for debug",
             Debug => "print out current term (useful in non-interactive mode)",
+            Macros => "print available macros",
             N => "shortcut for normalize",
             Normalize => "normalize the given term",
             R => "shortcut for reduce",
@@ -104,6 +107,7 @@ impl Macro {
         match self {
             CNormalize | CN => 1,
             Debug | Dbg => 1,
+            Macros => 0,
             Normalize | N => 1,
             Reduce | R => 1,
             Resolve => 1,

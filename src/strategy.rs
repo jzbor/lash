@@ -82,7 +82,7 @@ impl Strategy {
                 }
             },
             Variable(_) => None,
-            Macro(..) => panic!(),
+            Macro(..) => None,
             Named(named) => Self::reduce_normal(named.term(), verbose),
             ChurchNum(d) => Self::reduce_normal(LambdaTree::unwrap_church_num(*d), verbose),
         }
@@ -136,7 +136,7 @@ impl Strategy {
                 }
             },
             Variable(_) => None,
-            Macro(..) => panic!(),
+            Macro(..) => None,
             Named(named) => Self::reduce_normal(named.term(), verbose),
             ChurchNum(d) => Self::reduce_normal(LambdaTree::unwrap_church_num(*d), verbose),
         }
@@ -191,7 +191,7 @@ impl Strategy {
                 }
             },
             Variable(_) => None,
-            Macro(..) => panic!(),
+            Macro(..) => None,
             Named(named) => Self::reduce_applicative(named.term(), verbose),
             ChurchNum(d) => Self::reduce_applicative(LambdaTree::unwrap_church_num(*d), verbose),
         }
