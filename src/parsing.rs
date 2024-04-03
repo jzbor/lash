@@ -1,4 +1,5 @@
 use std::str;
+use std::cmp::Ordering;
 use std::{collections::VecDeque, fmt::Display};
 use std::path::PathBuf;
 use nom::{
@@ -66,16 +67,10 @@ impl<'a> nom::error::ParseError<Span<'a>> for ParseError<'a> {
     }
 
     fn or(self, other: Self) -> Self {
-        if self.line() == other.line() {
-            if self.offset() > other.offset() {
-                self
-            } else {
-                other
-            }
-        } else if self.line() > other.line() {
-            self
-        } else {
-            other
+        match self.line().cmp(&other.line()) {
+            Ordering::Equal => if self.offset() > other.offset() { self } else { other },
+            Ordering::Greater => self,
+            Ordering::Less => other,
         }
     }
 }
