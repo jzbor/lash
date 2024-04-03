@@ -10,6 +10,7 @@ pub struct LashError {
     message: String,
 }
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug,Clone)]
 pub enum LashErrorType {
     ChurchNumError,
