@@ -90,7 +90,7 @@ impl LambdaTree {
         use LambdaNode::*;
         match self.node() {
             Abstraction(var, term) => if var == variable { false } else { term.contains_free_variable(variable) },
-            Application(left_term, right_term) => left_term.contains_free_variable(variable) && right_term.contains_free_variable(variable),
+            Application(left_term, right_term) => left_term.contains_free_variable(variable) || right_term.contains_free_variable(variable),
             Variable(var) => var == variable,
             Macro(_, terms) => terms.iter().any(|t| t.contains_free_variable(variable)),
             Named(named) => named.term().contains_free_variable(variable),
