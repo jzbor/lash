@@ -13,6 +13,7 @@ mod parsing;
 mod r#macro;
 mod stdlib;
 mod strategy;
+mod tests;
 
 
 const DOCS_URL: &str = "https://jzbor.de/lash";
