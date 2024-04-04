@@ -16,6 +16,21 @@ fn id() {
 }
 
 #[test]
+fn church_addition() {
+    let mut interpreter = Interpreter::new();
+    interpreter.interpret_std().unwrap();
+    interpreter.set_church_num_enabled(true);
+    // 5 + 2
+    test_statement(&mut interpreter,
+        "!normalize (ADD $5 $2)",
+        "\\f . \\x . f (f (f (f (f (f (f x))))))");
+    // 5 + 2
+    test_statement(&mut interpreter,
+        "!normalize (ADD $0 $0)",
+        "\\f . \\x . x");
+}
+
+#[test]
 fn issue_1_capture_avoidance() {
     let mut interpreter = Interpreter::new();
     // the full term
@@ -26,5 +41,4 @@ fn issue_1_capture_avoidance() {
     test_statement(&mut interpreter,
         "!reduce (\\x . (\\f . \\x . f (f x)) (\\x' . x (x x')))",
         "\\x . \\x' . (\\x' . x (x x')) ((\\x' . x (x x')) x')");
-
 }
