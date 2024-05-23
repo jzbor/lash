@@ -1,10 +1,13 @@
+extern crate alloc;
+
+use core::fmt::{Display, Write};
+use alloc::vec::Vec;
 use humantime::format_duration;
-use core::fmt::Display;
-use std::time::Duration;
+use core::time::Duration;
 
 use clap::ValueEnum;
 
-use crate::{lambda::*, interpreter::Interpreter, error::{LashResult, LashError}};
+use crate::{environment::Environment, error::{LashError, LashResult}, interpreter::Interpreter, lambda::*};
 
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 #[clap(rename_all = "lower")]
@@ -41,21 +44,22 @@ impl Macro {
         }
     }
 
-    pub fn apply(self, interpreter: &Interpreter, terms: Vec<LambdaTree>, duration: Duration) -> LashResult<LambdaTree> {
+    pub fn apply<E: Environment>(self, interpreter: &Interpreter<E>, terms: Vec<LambdaTree>, duration: Duration) -> LashResult<LambdaTree> {
         use Macro::*;
 
         if terms.len() != self.nargs() {
             return Err(LashError::new_macro_arg_error(self, self.nargs(), terms.len()));
         }
 
+        let mut stdout = interpreter.env().stdout();
         let term = match self {
             CNormalize | CN => {
                 let (term, count) = interpreter.strategy().normalize(terms[0].clone(), false);
-                println!("Number of reductions: {}", count);
+                write!(stdout, "Number of reductions: {}", count)?;
                 term
             },
             Debug | Dbg => {
-                println!("{}", terms[0].clone());
+                write!(stdout, "{}", terms[0].clone())?;
                 terms[0].clone()
             },
             Macros => { Self::print_all(); LambdaTree::new_macro(self, terms) },
@@ -67,7 +71,7 @@ impl Macro {
             },
             Resolve => terms[0].resolve(),
             Time => {
-                println!("Time elapsed: {}", format_duration(Duration::from_millis(duration.as_millis() as u64)));
+                write!(stdout, "Time elapsed: {}", format_duration(Duration::from_millis(duration.as_millis() as u64)))?;
                 terms[0].clone()
             },
             VNormalize | VN => interpreter.strategy().normalize(terms[0].clone(), true).0,

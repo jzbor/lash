@@ -1,4 +1,5 @@
 use clap::Parser;
+use environment::StdEnvironment;
 use interpreter::Interpreter;
 use r#macro::Macro;
 use strategy::Strategy;
@@ -13,6 +14,7 @@ mod parsing;
 mod r#macro;
 mod stdlib;
 mod strategy;
+mod environment;
 
 
 const DOCS_URL: &str = "https://jzbor.de/lash";
@@ -63,7 +65,8 @@ fn main() {
         return;
     }
 
-    let mut interpreter = Interpreter::new();
+    let env = StdEnvironment::new();
+    let mut interpreter = Interpreter::new(env);
     interpreter.set_strategy(args.strategy);
     interpreter.set_church_num_enabled(args.church_nums);
     if args.std {
