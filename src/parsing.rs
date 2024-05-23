@@ -1,6 +1,9 @@
-use std::str;
-use std::cmp::Ordering;
-use std::{collections::VecDeque, fmt::Display};
+extern crate alloc;
+
+use alloc::collections::VecDeque;
+use core::str;
+use core::fmt::Display;
+
 use std::path::PathBuf;
 use nom::{
     branch::*,
@@ -76,13 +79,13 @@ impl<'a> nom::error::ParseError<Span<'a>> for ParseError<'a> {
 }
 
 impl<'a> Display for ParseError<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{} (line {})" , self.message, self.line())
     }
 }
 
 impl Display for Statement {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         use Statement::*;
         match self {
             Assignment(name, term) => write!(f, "{} := {}", name, term),

@@ -1,4 +1,5 @@
-use std::{fmt::Display, path::PathBuf};
+use core::fmt::Display;
+use std::path::PathBuf;
 
 use crate::{parsing, r#macro::Macro};
 
@@ -68,7 +69,7 @@ impl LashError {
 }
 
 impl Display for LashError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         use LashErrorType::*;
         let prefix = match self.error_type {
             ChurchNumError => "Church Numeral Error",

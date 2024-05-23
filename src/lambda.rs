@@ -1,7 +1,9 @@
-use std::collections::HashMap;
-use std::fmt::Display;
-use std::rc::Rc;
-use std::str;
+extern crate alloc;
+
+use core::fmt::Display;
+use core::str;
+use alloc::rc::Rc;
+use alloc::collections::BTreeMap;
 use std::time::Instant;
 
 use crate::debruijn::DeBruijnNode;
@@ -157,11 +159,11 @@ impl LambdaTree {
         item.as_ref()
     }
 
-    pub fn set_named_terms(&self, named_terms: &HashMap<String, Rc<NamedTerm>>) -> Self {
+    pub fn set_named_terms(&self, named_terms: &BTreeMap<String, Rc<NamedTerm>>) -> Self {
         self.set_named_terms_helper(named_terms, &mut Vec::new())
     }
 
-    fn set_named_terms_helper(&self, named_terms: &HashMap<String, Rc<NamedTerm>>, bound_vars: &mut Vec<String>) -> Self {
+    fn set_named_terms_helper(&self, named_terms: &BTreeMap<String, Rc<NamedTerm>>, bound_vars: &mut Vec<String>) -> Self {
         use LambdaNode::*;
         match self.node() {
             Abstraction(var, term) => {
@@ -252,7 +254,7 @@ impl LambdaTree {
 }
 
 impl Display for LambdaTree {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         use LambdaNode::*;
         match self.node() {
             Abstraction(var_name, term) => {

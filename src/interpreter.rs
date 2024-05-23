@@ -1,9 +1,11 @@
-use std::collections::HashMap;
-use std::fmt;
+extern crate alloc;
+
+use alloc::collections::BTreeMap;
+use alloc::rc::Rc;
+use core::fmt;
+use core::str;
 use std::fs;
 use std::path::PathBuf;
-use std::rc::Rc;
-use std::str;
 
 use crate::error::*;
 use crate::parsing;
@@ -14,7 +16,7 @@ use crate::stdlib::*;
 
 pub struct Interpreter {
     church_num_enabled: bool,
-    named_terms: HashMap<String, Rc<NamedTerm>>,
+    named_terms: BTreeMap<String, Rc<NamedTerm>>,
     strategy: Strategy,
 }
 
@@ -31,7 +33,7 @@ impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {
             church_num_enabled: false,
-            named_terms: HashMap::new(),
+            named_terms: BTreeMap::new(),
             strategy: Strategy::default()
         }
     }
