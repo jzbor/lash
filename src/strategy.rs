@@ -1,9 +1,8 @@
 use crate::lambda::*;
 use colored::Colorize;
 use clap::ValueEnum;
-use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Copy, Clone, ValueEnum, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, ValueEnum)]
 #[clap(rename_all = "lower")]
 pub enum Strategy {
     Applicative,

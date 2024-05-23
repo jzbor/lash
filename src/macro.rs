@@ -12,7 +12,7 @@ pub enum Macro {
     CN,
     CNormalize,
     Dbg,
-   Debug,
+    Debug,
     Macros,
     N,
     Normalize,

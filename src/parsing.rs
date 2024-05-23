@@ -3,7 +3,6 @@ extern crate alloc;
 use alloc::collections::VecDeque;
 use core::str;
 use core::fmt::Display;
-use std::path::PathBuf;
 use nom::{
     branch::*,
     bytes::complete::*,
@@ -194,7 +193,7 @@ fn match_directive_include(s: Span) -> IResult<InterpreterDirective> {
     let (rest, file_path) = take_until("\"")(rest)?;  // TODO find more robust matcher
     let (rest, _) = char('\"')(rest)?;
 
-    Ok((rest, InterpreterDirective::Include(PathBuf::from(file_path.to_string()))))
+    Ok((rest, InterpreterDirective::Include(file_path.to_string())))
 }
 
 fn match_directive_usestd(s: Span) -> IResult<InterpreterDirective> {
