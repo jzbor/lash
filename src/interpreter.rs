@@ -23,7 +23,7 @@ pub struct Interpreter {
 #[derive(Debug, Clone)]
 pub enum InterpreterDirective {
     Echo(String),
-    Include(PathBuf),
+    Include(String),
     Set(String, String),
     UseStd,
 }
@@ -48,8 +48,8 @@ impl Interpreter {
         }
     }
 
-    pub fn include(&mut self, file: PathBuf) -> LashResult<()> {
-        self.interpret_file(file)
+    pub fn include(&mut self, file: String) -> LashResult<()> {
+        self.interpret_file(PathBuf::from(file))
     }
 
     pub fn interpret_contents(&mut self, content: &str) -> LashResult<()> {
@@ -147,7 +147,7 @@ impl fmt::Display for InterpreterDirective {
         match self {
             Echo(msg) => write!(f, "@echo \"{}\"", msg),
             Set(key, value) => write!(f, "@set {} {}", key, value),
-            Include(file) => write!(f, "@include \"{}\"", file.to_string_lossy()),
+            Include(file) => write!(f, "@include \"{}\"", file),
             UseStd => write!(f, "@usestd"),
         }
     }

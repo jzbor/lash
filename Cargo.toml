@@ -17,10 +17,8 @@ path = "src/main.rs"
 
 [dependencies]
 rustyline = "10.0.0"
-nom = "7"
-nom_locate = "4.0.0"
+nom = { version = "7", default-features = false, features = ["alloc"] }
+nom_locate = { version = "4.0.0", default-features = false, features = ["alloc"] }
 clap = { version = "4.3.11", features = ["derive"] }
 colored = "2.0.4"
-serde = { version = "1.0.164", features = ["derive"] }
-serde_yaml = "0.9.21"
 humantime = "2.1.0"
