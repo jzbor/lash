@@ -1,4 +1,5 @@
 use clap::Parser;
+use environment::StdEnvironment;
 use interpreter::Interpreter;
 use r#macro::Macro;
 use strategy::Strategy;
@@ -6,6 +7,7 @@ use std::path::PathBuf;
 
 
 mod debruijn;
+mod environment;
 mod error;
 mod interactive;
 mod interpreter;
@@ -65,7 +67,8 @@ fn main() {
         return;
     }
 
-    let mut interpreter = Interpreter::new();
+    let env = StdEnvironment::new();
+    let mut interpreter = Interpreter::new(env);
     interpreter.set_strategy(args.strategy);
     interpreter.set_church_num_enabled(args.church_nums);
     if args.std {

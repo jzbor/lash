@@ -1,6 +1,13 @@
-use crate::lambda::*;
+extern crate alloc;
+
+use alloc::borrow::ToOwned;
+use alloc::format;
+use alloc::string::String;
 use colored::Colorize;
 use clap::ValueEnum;
+
+use crate::lambda::*;
+
 
 #[derive(Debug, Copy, Clone, ValueEnum)]
 #[clap(rename_all = "lower")]

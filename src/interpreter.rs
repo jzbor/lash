@@ -2,22 +2,26 @@ extern crate alloc;
 
 use alloc::collections::BTreeMap;
 use alloc::rc::Rc;
+use alloc::string::String;
 use core::fmt;
+use core::fmt::Write;
 use core::str;
 use std::fs;
 use std::path::PathBuf;
 
 use crate::error::*;
+use crate::environment::*;
 use crate::parsing;
 use crate::strategy::Strategy;
 use crate::lambda::*;
 use crate::stdlib::*;
 
 
-pub struct Interpreter {
+pub struct Interpreter<E: Environment> {
     church_num_enabled: bool,
     named_terms: BTreeMap<String, Rc<NamedTerm>>,
     strategy: Strategy,
+    env: E,
 }
 
 #[derive(Debug, Clone)]
@@ -29,19 +33,20 @@ pub enum InterpreterDirective {
 }
 
 
-impl Interpreter {
-    pub fn new() -> Interpreter {
+impl<E: Environment> Interpreter<E> {
+    pub fn new(env: E) -> Interpreter<E> {
         Interpreter {
             church_num_enabled: false,
             named_terms: BTreeMap::new(),
-            strategy: Strategy::default()
+            strategy: Strategy::default(),
+            env,
         }
     }
 
     fn apply_directive(&mut self, directive: InterpreterDirective) -> LashResult<()> {
         use InterpreterDirective::*;
         match directive {
-            Echo(msg) => Ok(println!("{}", msg)),
+            Echo(msg) => { Ok(write!(self.env.stdout(), "{}", msg)?) },
             Set(key, value) => self.set(&key, &value),
             Include(file) => self.include(file),
             UseStd => self.interpret_std(),
@@ -137,6 +142,10 @@ impl Interpreter {
 
     pub fn strategy(&self) -> Strategy {
         self.strategy
+    }
+
+    pub fn env(&self) -> &E {
+        &self.env
     }
 }
 

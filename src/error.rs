@@ -1,3 +1,8 @@
+extern crate alloc;
+
+use alloc::borrow::ToOwned;
+use alloc::format;
+use alloc::string::String;
 use core::fmt::Display;
 use std::path::PathBuf;
 
@@ -16,6 +21,7 @@ pub struct LashError {
 pub enum LashErrorType {
     ChurchNumError,
     FileError,
+    FormatError,
     MacroArgError,
     SetKeyError,
     SetValueError,
@@ -74,6 +80,7 @@ impl Display for LashError {
         let prefix = match self.error_type {
             ChurchNumError => "Church Numeral Error",
             FileError => "File Error",
+            FormatError => "Format Error",
             MacroArgError => "Macro Argument Error",
             SetKeyError => "Set Key Error",
             SetValueError => "Set Value Error",
@@ -94,6 +101,15 @@ impl From<nom::Err<parsing::ParseError<'_>>> for LashError {
         LashError {
             error_type: LashErrorType::SyntaxError,
             message,
+        }
+    }
+}
+
+impl From<core::fmt::Error> for LashError {
+    fn from(value: core::fmt::Error) -> Self {
+        LashError {
+            error_type: LashErrorType::FormatError,
+            message: value.to_string(),
         }
     }
 }

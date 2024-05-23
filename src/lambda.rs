@@ -1,12 +1,17 @@
 extern crate alloc;
 
+use alloc::borrow::ToOwned;
+use alloc::collections::BTreeMap;
+use alloc::rc::Rc;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+use alloc::format;
 use core::fmt::Display;
 use core::str;
-use alloc::rc::Rc;
-use alloc::collections::BTreeMap;
 use std::time::Instant;
 
 use crate::debruijn::DeBruijnNode;
+use crate::environment::Environment;
 use crate::interpreter::Interpreter;
 use crate::r#macro::Macro;
 use crate::error::LashResult;
@@ -71,7 +76,7 @@ impl LambdaTree {
         LambdaTree(Rc::new(Variable(name)))
     }
 
-    pub fn apply_macros(&self, interpreter: &Interpreter) -> LashResult<Self> {
+    pub fn apply_macros<E: Environment>(&self, interpreter: &Interpreter<E>) -> LashResult<Self> {
         use LambdaNode::*;
         match self.node() {
             Abstraction(var, term) => Ok(Self::new_abstraction(var.to_string(), term.apply_macros(interpreter)?)),

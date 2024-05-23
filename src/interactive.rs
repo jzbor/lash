@@ -1,11 +1,12 @@
 use rustyline::Editor;
 use rustyline::error::*;
 
+use crate::environment::Environment;
 use crate::interpreter::Interpreter;
 
 const PROMPT: &str = "[λ] ";
 
-pub fn repl(interpreter: &mut Interpreter) {
+pub fn repl<E: Environment>(interpreter: &mut Interpreter<E>) {
     let mut rl = Editor::<()>::new().unwrap();
 
     loop {
