@@ -7,6 +7,13 @@ readme = "README.md"
 repository = "https://github.com/jzbor/lash"
 license = "MIT"
 
+[lib]
+name = "lash_core"
+path = "src/lib.rs"
+
+[[bin]]
+name = "lash"
+path = "src/main.rs"
 
 [dependencies]
 rustyline = "10.0.0"
