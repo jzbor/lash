@@ -1,5 +1,7 @@
-use std::collections::HashMap;
-use std::rc::Rc;
+extern crate alloc;
+
+use alloc::collections::BTreeMap;
+use alloc::rc::Rc;
 
 use crate::lambda::NamedTerm;
 
@@ -8,7 +10,7 @@ pub type ContextFrame = Vec<Rc<NamedTerm>>;
 
 
 pub struct ContextTracker {
-    current_terms: HashMap<String, Rc<NamedTerm>>,
+    current_terms: BTreeMap<String, Rc<NamedTerm>>,
     frames: Vec<ContextFrame>,
 }
 
@@ -16,7 +18,7 @@ pub struct ContextTracker {
 impl ContextTracker {
     pub fn new() -> Self {
         ContextTracker {
-            current_terms: HashMap::new(),
+            current_terms: BTreeMap::new(),
             frames: Vec::new(),
         }
     }
@@ -36,7 +38,7 @@ impl ContextTracker {
     }
 
     fn rebuild_current_terms(&mut self) {
-        self.current_terms = HashMap::new();
+        self.current_terms = BTreeMap::new();
         for frame in &self.frames {
             for named in frame {
                 self.current_terms.insert(named.name().to_owned(), named.clone());
