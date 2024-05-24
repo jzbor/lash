@@ -72,13 +72,14 @@ impl Macro {
         Ok(())
     }
 
-    pub fn apply<E: Environment>(self, interpreter: &Interpreter<E>, terms: Vec<LambdaTree>, duration: Duration) -> LashResult<LambdaTree> {
+    pub fn apply<E: Environment>(self, interpreter: &mut Interpreter<E>, terms: Vec<LambdaTree>, duration: Duration) -> LashResult<LambdaTree> {
         use Macro::*;
 
         if terms.len() != self.nargs() {
             return Err(LashError::new_macro_arg_error(self, self.nargs(), terms.len()));
         }
 
+        let strategy = interpreter.strategy();
         let mut stdout = interpreter.env().stdout();
         let term = match self {
             AlphaEq => if terms[0].alpha_eq(&terms[1]) {
@@ -97,7 +98,7 @@ impl Macro {
                 )
             },
             CNormalize | CN => {
-                let (term, count) = interpreter.strategy().normalize(terms[0].clone(), false, &mut stdout);
+                let (term, count) = strategy.normalize(terms[0].clone(), false, &mut stdout);
                 writeln!(stdout, "Number of reductions: {}", count)?;
                 term
             },
@@ -110,8 +111,8 @@ impl Macro {
                 terms[0].clone()
             },
             Macros => { Self::print_all(&mut stdout)?; LambdaTree::new_macro(self, terms) },
-            Normalize | N => interpreter.strategy().normalize(terms[0].clone(), false, &mut stdout).0,
-            Reduce | R => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), false, &mut stdout) {
+            Normalize | N => strategy.normalize(terms[0].clone(), false, &mut stdout).0,
+            Reduce | R => if let Some(reduced) = strategy.reduce(terms[0].clone(), false, &mut stdout) {
                 reduced
             } else {
                 terms[0].clone()
@@ -124,8 +125,8 @@ impl Macro {
                 writeln!(stdout, "Time elapsed: {}ms", duration.as_millis() as u64)?;
                 terms[0].clone()
             },
-            VNormalize | VN => interpreter.strategy().normalize(terms[0].clone(), true, &mut stdout).0,
-            VReduce | VR => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), true, &mut stdout) {
+            VNormalize | VN => strategy.normalize(terms[0].clone(), true, &mut stdout).0,
+            VReduce | VR => if let Some(reduced) = strategy.reduce(terms[0].clone(), true, &mut stdout) {
                 reduced
             } else {
                 terms[0].clone()

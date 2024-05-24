@@ -105,7 +105,7 @@ impl<E: Environment> Interpreter<E> {
         self.interpret_contents(STD)
     }
 
-    fn process_lambda_term(&self, term: LambdaTree) -> LashResult<LambdaTree> {
+    fn process_lambda_term(&mut self, term: LambdaTree) -> LashResult<LambdaTree> {
         if !self.church_num_enabled && term.has_church_nums() {
             return Err(LashError::new_church_num_error());
         }
@@ -150,8 +150,8 @@ impl<E: Environment> Interpreter<E> {
         self.strategy
     }
 
-    pub fn env(&self) -> &E {
-        &self.env
+    pub fn env(&mut self) -> &mut E {
+        &mut self.env
     }
 }
 

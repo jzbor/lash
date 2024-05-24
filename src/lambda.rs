@@ -76,7 +76,7 @@ impl LambdaTree {
         LambdaTree(Rc::new(Variable(name)))
     }
 
-    pub fn apply_macros<E: Environment>(&self, interpreter: &Interpreter<E>) -> LashResult<Self> {
+    pub fn apply_macros<E: Environment>(&self, interpreter: &mut Interpreter<E>) -> LashResult<Self> {
         use LambdaNode::*;
         match self.node() {
             Abstraction(var, term) => Ok(Self::new_abstraction(var.to_string(), term.apply_macros(interpreter)?)),
