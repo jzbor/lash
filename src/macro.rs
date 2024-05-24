@@ -5,9 +5,11 @@ use alloc::vec::Vec;
 use core::fmt::{Display, Write};
 use core::str::FromStr;
 use core::time::Duration;
-use humantime::format_duration;
 
-use crate::{environment::Environment, error::{LashError, LashResult}, interpreter::Interpreter, lambda::*};
+use crate::environment::Environment;
+use crate::error::{LashError, LashResult};
+use crate::interpreter::Interpreter;
+use crate::lambda::*;
 
 
 // Improved version of
@@ -95,7 +97,10 @@ impl Macro {
             },
             Resolve => terms[0].resolve(),
             Time => {
-                writeln!(stdout, "Time elapsed: {}", format_duration(Duration::from_millis(duration.as_millis() as u64)))?;
+                #[cfg(feature = "std")]
+                writeln!(stdout, "Time elapsed: {}", humantime::format_duration(Duration::from_millis(duration.as_millis() as u64)))?;
+                #[cfg(not(feature = "std"))]
+                writeln!(stdout, "Time elapsed: {}ms", duration.as_millis() as u64)?;
                 terms[0].clone()
             },
             VNormalize | VN => interpreter.strategy().normalize(terms[0].clone(), true, &mut stdout).0,

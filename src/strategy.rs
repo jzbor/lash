@@ -4,6 +4,8 @@ use alloc::borrow::ToOwned;
 use alloc::format;
 use alloc::string::String;
 use core::fmt::Write;
+
+#[cfg(feature = "std")]
 use colored::Colorize;
 
 use crate::lambda::*;
@@ -240,7 +242,15 @@ impl Strategy {
 
     fn reduction_format_redex(left_term: &LambdaTree, right_term: &LambdaTree, verbose: bool) -> Option<String> {
         if verbose {
-            Some(format!("{} {}", left_term.fmt_with_parenthesis(true).blue(), right_term.fmt_with_parenthesis(false).bright_blue()))
+            #[cfg(feature = "std")]
+            let result = Some(format!("{} {}",
+                left_term.fmt_with_parenthesis(true).blue(),
+                right_term.fmt_with_parenthesis(false).bright_blue()));
+            #[cfg(not(feature = "std"))]
+            let result = Some(format!("{} {}",
+                left_term.fmt_with_parenthesis(true),
+                right_term.fmt_with_parenthesis(false)));
+            result
         } else {
             None
         }
