@@ -1,11 +1,11 @@
 extern crate alloc;
 
-use core::fmt::{Display, Write};
+use alloc::string::ToString;
 use alloc::vec::Vec;
-use humantime::format_duration;
+use core::fmt::{Display, Write};
+use core::str::FromStr;
 use core::time::Duration;
-
-use clap::ValueEnum;
+use humantime::format_duration;
 
 use crate::debruijn::DeBruijnNode;
 use crate::environment::Environment;
@@ -13,41 +13,64 @@ use crate::error::{LashError, LashResult};
 use crate::interpreter::Interpreter;
 use crate::lambda::*;
 
-#[derive(Debug, Clone, Copy, clap::ValueEnum)]
-#[clap(rename_all = "lower")]
-pub enum Macro {
-    AlphaEq,
-    CN,
-    CNormalize,
-    Dbg,
-    DeBruijn,
-    Debug,
-    Macros,
-    N,
-    Normalize,
-    R,
-    Reduce,
-    Resolve,
-    Time,
-    VN,
-    VNormalize,
-    VR,
-    VReduce,
+enum_with_values! {
+    #[derive(Debug, Clone, Copy)]
+    #[cfg_attr(feature = "std", derive(clap::ValueEnum))]
+    #[cfg_attr(feature = "std", clap(rename_all = "lower"))]
+    vis pub enum Macro {
+        AlphaEq,
+        CN,
+        CNormalize,
+        Dbg,
+        DeBruijn,
+        Debug,
+        Macros,
+        N,
+        Normalize,
+        R,
+        Reduce,
+        Resolve,
+        Time,
+        VN,
+        VNormalize,
+        VR,
+        VReduce,
+    }
+}
+
+// Improved version of
+// https://stackoverflow.com/a/64678145/10854888
+macro_rules! enum_with_values {
+    ($(#[$derives:meta])* $(vis $visibility:vis)? enum $name:ident { $($(#[$nested_meta:meta])* $member:ident),* }) => {
+        $(#[$derives])*
+        $($visibility)? enum $name {
+            $($(#[$nested_meta])* $member),*
+        }
+        impl $name {
+            #[allow(dead_code)]
+            pub const VALUES: &'static [$name; $crate::count!($($member)*)] = &[$($name::$member,)*];
+            #[allow(dead_code)]
+            pub const SIZE: usize = $crate::count!($($member)*);
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! count {
+    () => (0usize);
+    ( $x:tt $($xs:tt)* ) => (1usize + $crate::count!($($xs)*));
 }
 
 impl Macro {
-    pub fn get(name: &str) -> Option<Self> {
-        clap::ValueEnum::from_str(name, false).ok()
-    }
-
     pub fn macros() -> &'static [Self] {
-        clap::ValueEnum::value_variants()
+        Self::VALUES
     }
 
-    pub fn print_all() {
+    pub fn print_all(out: &mut impl Write) -> LashResult<()>{
         for m in Self::macros() {
-            println!("{: <8} \t{}", m.to_string(), m.help());
+            writeln!(out, "{: <8} \t{}", m.to_string(), m.help())?;
         }
+        Ok(())
     }
 
     pub fn apply<E: Environment>(self, interpreter: &Interpreter<E>, terms: Vec<LambdaTree>, duration: Duration) -> LashResult<LambdaTree> {
@@ -75,8 +98,8 @@ impl Macro {
                 )
             },
             CNormalize | CN => {
-                let (term, count) = interpreter.strategy().normalize(terms[0].clone(), false);
-                write!(stdout, "Number of reductions: {}", count)?;
+                let (term, count) = interpreter.strategy().normalize(terms[0].clone(), false, &mut stdout);
+                writeln!(stdout, "Number of reductions: {}", count)?;
                 term
             },
             DeBruijn => {
@@ -84,23 +107,23 @@ impl Macro {
                 terms[0].clone()
             },
             Debug | Dbg => {
-                write!(stdout, "{}", terms[0].clone())?;
+                writeln!(stdout, "{}", terms[0].clone())?;
                 terms[0].clone()
             },
-            Macros => { Self::print_all(); LambdaTree::new_macro(self, terms) },
-            Normalize | N => interpreter.strategy().normalize(terms[0].clone(), false).0,
-            Reduce | R => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), false) {
+            Macros => { Self::print_all(&mut stdout)?; LambdaTree::new_macro(self, terms) },
+            Normalize | N => interpreter.strategy().normalize(terms[0].clone(), false, &mut stdout).0,
+            Reduce | R => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), false, &mut stdout) {
                 reduced
             } else {
                 terms[0].clone()
             },
             Resolve => terms[0].resolve(),
             Time => {
-                write!(stdout, "Time elapsed: {}", format_duration(Duration::from_millis(duration.as_millis() as u64)))?;
+                writeln!(stdout, "Time elapsed: {}", format_duration(Duration::from_millis(duration.as_millis() as u64)))?;
                 terms[0].clone()
             },
-            VNormalize | VN => interpreter.strategy().normalize(terms[0].clone(), true).0,
-            VReduce | VR => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), true) {
+            VNormalize | VN => interpreter.strategy().normalize(terms[0].clone(), true, &mut stdout).0,
+            VReduce | VR => if let Some(reduced) = interpreter.strategy().reduce(terms[0].clone(), true, &mut stdout) {
                 reduced
             } else {
                 terms[0].clone()
@@ -154,6 +177,31 @@ impl Macro {
 
 impl Display for Macro {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "!{}", self.to_possible_value().unwrap().get_name())
+        writeln!(f, "!{}", self)
+    }
+}
+
+impl FromStr for Macro {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use Macro::*;
+        match s {
+            "cn" => Ok(CN),
+            "cnormalize" => Ok(CNormalize),
+            "dbg" => Ok(Dbg),
+            "debug" => Ok(Debug),
+            "macros" => Ok(Macros),
+            "n" => Ok(N),
+            "normalize" => Ok(Normalize),
+            "r" => Ok(R),
+            "reduce" => Ok(Reduce),
+            "resolve" => Ok(Resolve),
+            "time" => Ok(Time),
+            "vn" => Ok(VN),
+            "vnormalize" => Ok(VNormalize),
+            "vr" => Ok(VR),
+            "vreduce" => Ok(VReduce),
+            _ => Err(()),
+        }
     }
 }

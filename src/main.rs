@@ -18,6 +18,8 @@ mod stdlib;
 mod strategy;
 mod tests;
 
+use crate::environment::Environment;
+
 
 const DOCS_URL: &str = "https://jzbor.de/lash";
 
@@ -63,7 +65,7 @@ fn main() {
         }
         return;
     } else if args.print_macros {
-        Macro::print_all();
+        Macro::print_all(&mut StdEnvironment::new().stdout()).unwrap();
         return;
     }
 

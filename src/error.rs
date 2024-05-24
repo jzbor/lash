@@ -2,9 +2,8 @@ extern crate alloc;
 
 use alloc::borrow::ToOwned;
 use alloc::format;
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use core::fmt::Display;
-use std::path::PathBuf;
 
 use crate::{parsing, r#macro::Macro};
 
@@ -26,6 +25,8 @@ pub enum LashErrorType {
     SetKeyError,
     SetValueError,
     SyntaxError,
+    #[cfg(not(feature = "std"))]
+    NoStdError,
 }
 
 impl LashError {
@@ -36,7 +37,8 @@ impl LashError {
         }
     }
 
-    pub fn new_file_error(file: PathBuf, error: Option<std::io::Error>) -> Self {
+    #[cfg(feature = "std")]
+    pub fn new_file_error(file: std::path::PathBuf, error: Option<std::io::Error>) -> Self {
         let error_msg = match error {
             Some(e) => format!("({})", e),
             None => String::new(),
@@ -68,9 +70,23 @@ impl LashError {
         }
     }
 
+    #[cfg(not(feature = "std"))]
+    pub fn new_no_std_error(message: String) -> Self {
+        LashError {
+            error_type: LashErrorType::NoStdError,
+            message,
+        }
+    }
+
+
     pub fn resolve(&self) {
-        eprintln!("{}", self);
-        std::process::exit(1);
+        #[cfg(feature = "std")]
+        {
+            eprintln!("{}", self);
+            std::process::exit(1);
+        }
+        #[cfg(not(feature = "std"))]
+        Err(self).unwrap()
     }
 }
 
@@ -85,6 +101,8 @@ impl Display for LashError {
             SetKeyError => "Set Key Error",
             SetValueError => "Set Value Error",
             SyntaxError => "Syntax Error",
+            #[cfg(not(feature = "std"))]
+            NoStdError => "Std Not Available",
         };
         write!(f, "{}: {}", prefix, self.message)
     }

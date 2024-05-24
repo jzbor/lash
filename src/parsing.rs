@@ -6,6 +6,7 @@ use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::str;
+use core::str::FromStr;
 use core::fmt::Display;
 
 use nom::{
@@ -235,9 +236,9 @@ fn match_macro(s: Span) -> IResult<LambdaTree> {
     let (rest, _) = char('!')(s)?;
     let (rest, macro_name) = alphanumeric1(rest)?;
 
-    let m = match Macro::get(&macro_name) {
-        Some(m) => m,
-        None => return Err(nom::Err::Error(ParseError::new(format!("unknown macro '{}'", macro_name), rest))),
+    let m = match Macro::from_str(&macro_name) {
+        Ok(m) => m,
+        Err(_) => return Err(nom::Err::Error(ParseError::new(format!("unknown macro '{}'", macro_name), rest))),
     };
 
     let (rest, args) = opt(match_macro_args)(rest)?;

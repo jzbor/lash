@@ -6,8 +6,6 @@ use alloc::string::String;
 use core::fmt;
 use core::fmt::Write;
 use core::str;
-use std::fs;
-use std::path::PathBuf;
 
 use crate::error::*;
 use crate::environment::*;
@@ -46,7 +44,7 @@ impl<E: Environment> Interpreter<E> {
     fn apply_directive(&mut self, directive: InterpreterDirective) -> LashResult<()> {
         use InterpreterDirective::*;
         match directive {
-            Echo(msg) => { Ok(write!(self.env.stdout(), "{}", msg)?) },
+            Echo(msg) => { Ok(writeln!(self.env.stdout(), "{}", msg)?) },
             Set(key, value) => self.set(&key, &value),
             Include(file) => self.include(file),
             UseStd => self.interpret_std(),
@@ -54,7 +52,14 @@ impl<E: Environment> Interpreter<E> {
     }
 
     pub fn include(&mut self, file: String) -> LashResult<()> {
-        self.interpret_file(PathBuf::from(file))
+        #[cfg(feature = "std")]
+        let result = self.interpret_file(std::path::PathBuf::from(file));
+        #[cfg(not(feature = "std"))]
+        let result = Err(LashError::new_no_std_error(String::from("cannot open files")));
+        #[cfg(not(feature = "std"))]
+        let _ = file;
+
+        result
     }
 
     pub fn interpret_contents(&mut self, content: &str) -> LashResult<()> {
@@ -110,15 +115,16 @@ impl<E: Environment> Interpreter<E> {
         Ok(with_macros)
     }
 
-    pub fn interpret_file(&mut self, file: PathBuf) -> LashResult<()> {
-        let contents = fs::read_to_string(&file)
+    #[cfg(feature = "std")]
+    pub fn interpret_file(&mut self, file: std::path::PathBuf) -> LashResult<()> {
+        let contents = std::fs::read_to_string(&file)
             .map_err(|e| LashError::new_file_error(file, Some(e)))?;
         self.interpret_contents(&contents)
     }
 
     pub fn set(&mut self, key: &str, value: &str) -> LashResult<()> {
         match key {
-            "strategy" => match clap::ValueEnum::from_str(value, false).ok() {
+            "strategy" => match Strategy::from_str(value).ok() {
                 Some(strat) => self.set_strategy(strat),
                 None => return Err(LashError::new_set_value_error(value)),
             },

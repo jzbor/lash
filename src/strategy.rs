@@ -3,14 +3,15 @@ extern crate alloc;
 use alloc::borrow::ToOwned;
 use alloc::format;
 use alloc::string::String;
+use core::fmt::Write;
 use colored::Colorize;
-use clap::ValueEnum;
 
 use crate::lambda::*;
 
 
-#[derive(Debug, Copy, Clone, ValueEnum)]
-#[clap(rename_all = "lower")]
+#[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "std", derive(clap::ValueEnum))]
+#[cfg_attr(feature = "std", clap(rename_all = "lower"))]
 pub enum Strategy {
     Applicative,
     Normal,
@@ -18,11 +19,20 @@ pub enum Strategy {
 }
 
 impl Strategy {
-    pub fn normalize(&self, term: LambdaTree, verbose: bool) -> (LambdaTree, usize) {
+    pub fn from_str(s: &str) -> Result<Self, ()> {
+        match s {
+            "applicative" => Ok(Self::Applicative),
+            "normal" => Ok(Self::Normal),
+            "callbyname" => Ok(Self::CallByName),
+            _ => Err(()),
+        }
+    }
+
+    pub fn normalize(&self, term: LambdaTree, verbose: bool, out: &mut impl Write) -> (LambdaTree, usize) {
         let mut current = term;
         let mut nreductions = 0;
         loop {
-            if let Some(next) = self.reduce(current.clone(), verbose) {
+            if let Some(next) = self.reduce(current.clone(), verbose, out) {
                 current = next;
                 nreductions += 1;
             } else {
@@ -31,7 +41,7 @@ impl Strategy {
         }
     }
 
-    pub fn reduce(&self, term: LambdaTree, verbose: bool) -> Option<LambdaTree> {
+    pub fn reduce(&self, term: LambdaTree, verbose: bool, out: &mut impl Write) -> Option<LambdaTree> {
         use Strategy::*;
         let result = match self {
             Applicative => Self::reduce_applicative(term, verbose),
@@ -40,7 +50,7 @@ impl Strategy {
         };
         if let Some((lambda, string)) = result {
             if verbose {
-                println!("{}", string.unwrap());
+                let _ignored = writeln!(out, "{}", string.unwrap());
             };
             Some(lambda)
         } else {
