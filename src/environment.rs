@@ -9,8 +9,8 @@ pub trait EnvTimer {
 pub trait Environment: {
     type Timer: EnvTimer;
 
-    fn stdout(&self) -> impl Write;
-    fn stderr(&self) -> impl Write;
+    fn stdout(&mut self) -> &mut impl Write;
+    fn stderr(&mut self) -> &mut impl Write;
 
     fn start_timer(&self) -> Self::Timer {
         Self::Timer::start()
@@ -18,7 +18,10 @@ pub trait Environment: {
 }
 
 #[cfg(feature = "std")]
-pub struct StdEnvironment {}
+pub struct StdEnvironment {
+    stdout: StdStdout,
+    stderr: StdStderr,
+}
 
 #[cfg(feature = "std")]
 struct StdStdout {}
@@ -29,7 +32,10 @@ struct StdStderr {}
 #[cfg(feature = "std")]
 impl StdEnvironment {
     pub fn new() -> Self {
-        StdEnvironment {}
+        StdEnvironment {
+            stdout: StdStdout {},
+            stderr: StdStderr {},
+        }
     }
 }
 
@@ -37,12 +43,12 @@ impl StdEnvironment {
 impl Environment for StdEnvironment {
     type Timer = std::time::Instant;
 
-    fn stdout(&self) -> impl Write {
-        StdStdout {}
+    fn stdout(&mut self) -> &mut impl Write {
+        &mut self.stdout
     }
 
-    fn stderr(&self) -> impl Write {
-        StdStderr {}
+    fn stderr(&mut self) -> &mut impl Write {
+        &mut self.stderr
     }
 }
 
