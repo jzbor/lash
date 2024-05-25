@@ -26,7 +26,7 @@ pub enum LashErrorType {
     SetValueError,
     SyntaxError,
     #[cfg(not(feature = "std"))]
-    NoStdError,
+    NotSupportedError,
 }
 
 impl LashError {
@@ -71,9 +71,9 @@ impl LashError {
     }
 
     #[cfg(not(feature = "std"))]
-    pub fn new_no_std_error(message: String) -> Self {
+    pub fn new_not_supported_error(message: String) -> Self {
         LashError {
-            error_type: LashErrorType::NoStdError,
+            error_type: LashErrorType::NotSupportedError,
             message,
         }
     }
@@ -102,7 +102,7 @@ impl Display for LashError {
             SetValueError => "Set Value Error",
             SyntaxError => "Syntax Error",
             #[cfg(not(feature = "std"))]
-            NoStdError => "Std Not Available",
+            NotSupportedError => "Not supported",
         };
         write!(f, "{}: {}", prefix, self.message)
     }

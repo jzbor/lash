@@ -1,20 +1,19 @@
+extern crate alloc;
+
+use alloc::string::String;
 use core::fmt::Write;
 use core::time::Duration;
 
-pub trait EnvTimer {
-    fn start() -> Self;
-    fn end(self) -> Duration;
-}
+use crate::error::*;
 
 pub trait Environment: {
-    type Timer: EnvTimer;
+    type Instant;
 
     fn stdout(&mut self) -> &mut impl Write;
     fn stderr(&mut self) -> &mut impl Write;
-
-    fn start_timer(&self) -> Self::Timer {
-        Self::Timer::start()
-    }
+    fn load(&self, file: &str) -> LashResult<String>;
+    fn now(&self) -> Self::Instant;
+    fn elapsed(&self, then: Self::Instant) -> Duration;
 }
 
 #[cfg(feature = "std")]
@@ -41,7 +40,7 @@ impl StdEnvironment {
 
 #[cfg(feature = "std")]
 impl Environment for StdEnvironment {
-    type Timer = std::time::Instant;
+    type Instant = std::time::Instant;
 
     fn stdout(&mut self) -> &mut impl Write {
         &mut self.stdout
@@ -49,6 +48,19 @@ impl Environment for StdEnvironment {
 
     fn stderr(&mut self) -> &mut impl Write {
         &mut self.stderr
+    }
+
+    fn load(&self, file: &str) -> LashResult<String> {
+        std::fs::read_to_string(&file)
+            .map_err(|e| LashError::new_file_error(file.into(), Some(e)))
+    }
+
+    fn now(&self) -> Self::Instant {
+        std::time::Instant::now()
+    }
+
+    fn elapsed(&self, then: Self::Instant) -> Duration {
+        then.elapsed()
     }
 }
 
@@ -65,16 +77,5 @@ impl core::fmt::Write for StdStderr {
     fn write_str(&mut self, s: &str) -> std::fmt::Result {
         eprintln!("{}", s);
         Ok(())
-    }
-}
-
-#[cfg(feature = "std")]
-impl EnvTimer for std::time::Instant {
-    fn start() -> Self {
-        std::time::Instant::now()
-    }
-
-    fn end(self) -> Duration {
-        self.elapsed()
     }
 }

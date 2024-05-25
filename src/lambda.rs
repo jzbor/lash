@@ -11,7 +11,6 @@ use core::str;
 
 use crate::debruijn::DeBruijnNode;
 use crate::environment::Environment;
-use crate::environment::EnvTimer;
 use crate::interpreter::Interpreter;
 use crate::r#macro::Macro;
 use crate::error::LashResult;
@@ -84,9 +83,9 @@ impl LambdaTree {
                 => Ok(Self::new_application(left_term.apply_macros(interpreter)?, right_term.apply_macros(interpreter)?)),
             Variable(_) => Ok(self.clone()),
             Macro(m, terms) => {
-                let time_start = interpreter.env().start_timer();
+                let time_start = interpreter.env().now();
                 let terms = terms.iter().map(|m| m.apply_macros(interpreter)).collect::<Vec<LashResult<LambdaTree>>>();
-                let duration = time_start.end();
+                let duration = interpreter.env().elapsed(time_start);
                 if let Some(e) = terms.iter().find(|r| r.is_err()) {
                     e.clone()
                 } else {
