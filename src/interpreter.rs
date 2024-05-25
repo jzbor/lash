@@ -52,14 +52,8 @@ impl<E: Environment> Interpreter<E> {
     }
 
     pub fn include(&mut self, file: String) -> LashResult<()> {
-        #[cfg(feature = "std")]
-        let result = self.interpret_file(std::path::PathBuf::from(file));
-        #[cfg(not(feature = "std"))]
-        let result = Err(LashError::new_no_std_error(String::from("cannot open files")));
-        #[cfg(not(feature = "std"))]
-        let _ = file;
-
-        result
+        let contents = self.env().load(&file)?;
+        self.interpret_contents(&contents)
     }
 
     pub fn interpret_contents(&mut self, content: &str) -> LashResult<()> {
@@ -81,6 +75,13 @@ impl<E: Environment> Interpreter<E> {
         }
 
         Ok(())
+    }
+
+    #[cfg(feature = "std")]
+    pub fn interpret_file(&mut self, file: std::path::PathBuf) -> LashResult<()> {
+        let contents = std::fs::read_to_string(&file)
+            .map_err(|e| LashError::new_file_error(file, Some(e)))?;
+        self.interpret_contents(&contents)
     }
 
     pub fn interpret_line(&mut self, line: &str) -> LashResult<parsing::Statement> {
@@ -113,13 +114,6 @@ impl<E: Environment> Interpreter<E> {
         let with_named = term.set_named_terms(&self.named_terms);
         let with_macros = with_named.apply_macros(self)?;
         Ok(with_macros)
-    }
-
-    #[cfg(feature = "std")]
-    pub fn interpret_file(&mut self, file: std::path::PathBuf) -> LashResult<()> {
-        let contents = std::fs::read_to_string(&file)
-            .map_err(|e| LashError::new_file_error(file, Some(e)))?;
-        self.interpret_contents(&contents)
     }
 
     pub fn set(&mut self, key: &str, value: &str) -> LashResult<()> {
