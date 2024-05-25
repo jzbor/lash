@@ -25,6 +25,8 @@ pub enum LashErrorType {
     SetValueError,
     SyntaxError,
     #[cfg(not(feature = "std"))]
+    NotFoundError,
+    #[cfg(not(feature = "std"))]
     NotSupportedError,
 }
 
@@ -45,6 +47,14 @@ impl LashError {
         LashError {
             error_type: LashErrorType::FileError,
             message: format!("unable to open file '{}' {}", file.to_string_lossy(), error_msg),
+        }
+    }
+
+    #[cfg(not(feature = "std"))]
+    pub fn new_not_found_error(file: &str) -> Self {
+        LashError {
+            error_type: LashErrorType::NotFoundError,
+            message: format!("{}", file),
         }
     }
 
@@ -100,6 +110,8 @@ impl Display for LashError {
             SetKeyError => "Set Key Error",
             SetValueError => "Set Value Error",
             SyntaxError => "Syntax Error",
+            #[cfg(not(feature = "std"))]
+            NotFoundError => "Not Found",
             #[cfg(not(feature = "std"))]
             NotSupportedError => "Not supported",
         };
