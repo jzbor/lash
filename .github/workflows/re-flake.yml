@@ -1,8 +1,0 @@
-name: flake
-
-on:
-  push:
-
-jobs:
-  call-reusable-flake-workflow:
-    uses: jzbor/nix-flake-workflow/.github/workflows/reusable-flake-workflow.yml@main

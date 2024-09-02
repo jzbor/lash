@@ -40,8 +40,8 @@
 
     ### DEVELOPMENT SHELLS ###
     devShells.default = pkgs.mkShellNoCC {
-      name = self.packages.${system}.default.name;
-      nativeBuildInputs = nativeBuildInputs;
+      inherit (self.packages.${system}.default) name;
+      inherit nativeBuildInputs;
     };
 
     apps.open-docs = let
