@@ -6,6 +6,7 @@ Macros are only evaluated once when the term is initially parsed, after that tey
 
 ## Available Macros:
 * `!cnormalize` - like `!normalize` but shows number of reductions performed
+* `!debruijn` - print out DeBruijn form of the argument term
 * `!debug` - prints out the argument term
 * `!macros` - prints available macros
 * `!normalize` - reduce the term until it cannot be reduced further (this is the so-called normal form)

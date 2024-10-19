@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use clap::ValueEnum;
 
-use crate::{lambda::*, interpreter::Interpreter, error::{LashResult, LashError}};
+use crate::{debruijn::DeBruijnNode, error::{LashError, LashResult}, interpreter::Interpreter, lambda::*};
 
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 #[clap(rename_all = "lower")]
@@ -12,6 +12,7 @@ pub enum Macro {
     CN,
     CNormalize,
     Dbg,
+    DeBruijn,
     Debug,
     Macros,
     N,
@@ -54,6 +55,10 @@ impl Macro {
                 println!("Number of reductions: {}", count);
                 term
             },
+            DeBruijn => {
+                println!("{}", DeBruijnNode::from(terms[0].clone()).to_string());
+                terms[0].clone()
+            },
             Debug | Dbg => {
                 println!("{}", terms[0].clone());
                 terms[0].clone()
@@ -87,6 +92,7 @@ impl Macro {
             CN => "shortcut for cnormalize",
             CNormalize => "normalize and show number of reductions performed",
             Dbg => "shortcut for debug",
+            DeBruijn => "print out DeBruijn form",
             Debug => "print out current term (useful in non-interactive mode)",
             Macros => "print available macros",
             N => "shortcut for normalize",
@@ -106,6 +112,7 @@ impl Macro {
         use Macro::*;
         match self {
             CNormalize | CN => 1,
+            DeBruijn => 1,
             Debug | Dbg => 1,
             Macros => 0,
             Normalize | N => 1,

@@ -5,6 +5,7 @@ use strategy::Strategy;
 use std::path::PathBuf;
 
 
+mod debruijn;
 mod error;
 mod interactive;
 mod interpreter;
