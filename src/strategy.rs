@@ -57,9 +57,6 @@ impl Strategy {
         match term.node() {
             Abstraction(..) => None,
             Application(left_term, right_term) => {
-                let left_option = Self::reduce_normal(left_term.clone(), verbose);
-                let right_option = Self::reduce_normal(right_term.clone(), verbose);
-
                 if let Abstraction(var_name, inner_term) = left_term.node() {
                     let string = Self::reduction_format_redex(left_term, right_term, verbose);
                     return Some((inner_term.substitute(var_name, right_term.clone()), string));
@@ -81,10 +78,10 @@ impl Strategy {
 
                 if left_term.is_abstraction() {
                     None
-                } else if let Some((left_reduced, left_string)) = left_option {
+                } else if let Some((left_reduced, left_string)) = Self::reduce_normal(left_term.clone(), verbose) {
                     let string = Self::reduction_format_application(left_term.clone(), left_string, right_term.clone(), None, verbose);
                     Some((LambdaTree::new_application(left_reduced, right_term.clone()), string))
-                } else if let Some((right_reduced, right_string)) = right_option {
+                } else if let Some((right_reduced, right_string)) = Self::reduce_normal(right_term.clone(), verbose) {
                     let string = Self::reduction_format_application(left_term.clone(), None, right_term.clone(), right_string, verbose);
                     Some((LambdaTree::new_application(left_term.clone(), right_reduced), string))
                 } else {
@@ -111,9 +108,6 @@ impl Strategy {
                 }
             },
             Application(left_term, right_term) => {
-                let left_option = Self::reduce_normal(left_term.clone(), verbose);
-                let right_option = Self::reduce_normal(right_term.clone(), verbose);
-
                 if let Abstraction(var_name, inner_term) = left_term.node() {
                     let string = Self::reduction_format_redex(left_term, right_term, verbose);
                     return Some((inner_term.substitute(var_name, right_term.clone()), string));
@@ -135,10 +129,10 @@ impl Strategy {
 
                 if left_term.is_abstraction() {
                     None
-                } else if let Some((left_reduced, left_string)) = left_option {
+                } else if let Some((left_reduced, left_string)) = Self::reduce_normal(left_term.clone(), verbose) {
                     let string = Self::reduction_format_application(left_term.clone(), left_string, right_term.clone(), None, verbose);
                     Some((LambdaTree::new_application(left_reduced, right_term.clone()), string))
-                } else if let Some((right_reduced, right_string)) = right_option {
+                } else if let Some((right_reduced, right_string)) = Self::reduce_normal(right_term.clone(), verbose) {
                     let string = Self::reduction_format_application(left_term.clone(), None, right_term.clone(), right_string, verbose);
                     Some((LambdaTree::new_application(left_term.clone(), right_reduced), string))
                 } else {
@@ -165,12 +159,9 @@ impl Strategy {
                 }
             },
             Application(left_term, right_term) => {
-                let left_option = Self::reduce_applicative(left_term.clone(), verbose);
-                let right_option = Self::reduce_applicative(right_term.clone(), verbose);
-
                 if let Abstraction(var_name, inner_term) = left_term.node() {
                     let inner_reduced = Self::reduce_applicative(inner_term.clone(), verbose);
-                    if inner_reduced.is_none() && right_option.is_none() {
+                    if inner_reduced.is_none() && Self::reduce_applicative(right_term.clone(), verbose).is_none() {
                         let string = Self::reduction_format_redex(left_term, right_term, verbose);
                         return Some((inner_term.substitute(var_name, right_term.clone()), string));
                     }
@@ -190,10 +181,10 @@ impl Strategy {
                     }
                 }
 
-                if let Some((left_reduced, left_string)) = left_option {
+                if let Some((left_reduced, left_string)) = Self::reduce_applicative(left_term.clone(), verbose) {
                     let string = Self::reduction_format_application(left_term.clone(), left_string, right_term.clone(), None, verbose);
                     Some((LambdaTree::new_application(left_reduced, right_term.clone()), string))
-                } else if let Some((right_reduced, right_string)) = right_option {
+                } else if let Some((right_reduced, right_string)) = Self::reduce_applicative(right_term.clone(), verbose) {
                     let string = Self::reduction_format_application(left_term.clone(), None, right_term.clone(), right_string, verbose);
                     Some((LambdaTree::new_application(left_term.clone(), right_reduced), string))
                 } else {
