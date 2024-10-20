@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::str;
 use std::time::Instant;
 
+use crate::debruijn::DeBruijnNode;
 use crate::interpreter::Interpreter;
 use crate::r#macro::Macro;
 use crate::error::LashResult;
@@ -39,6 +40,10 @@ impl NamedTerm {
 }
 
 impl LambdaTree {
+    pub fn alpha_eq(&self, other: &LambdaTree) -> bool {
+        DeBruijnNode::from(self.clone()) == DeBruijnNode::from(other.clone())
+    }
+
     pub fn new_abstraction(var: String, term: Self) -> Self {
         use LambdaNode::*;
         LambdaTree(Rc::new(Abstraction(var, term)))

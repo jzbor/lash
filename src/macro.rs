@@ -9,6 +9,7 @@ use crate::{debruijn::DeBruijnNode, error::{LashError, LashResult}, interpreter:
 #[derive(Debug, Clone, Copy, clap::ValueEnum)]
 #[clap(rename_all = "lower")]
 pub enum Macro {
+    AlphaEq,
     CN,
     CNormalize,
     Dbg,
@@ -50,6 +51,21 @@ impl Macro {
         }
 
         let term = match self {
+            AlphaEq => if terms[0].alpha_eq(&terms[1]) {
+                println!("Terms are alpha equivalent");
+                LambdaTree::new_abstraction("x".to_owned(),
+                    LambdaTree::new_abstraction("y".to_owned(),
+                        LambdaTree::new_variable("x".to_owned())
+                    )
+                )
+            } else {
+                println!("Terms are NOT alpha equivalent");
+                LambdaTree::new_abstraction("x".to_owned(),
+                    LambdaTree::new_abstraction("y".to_owned(),
+                        LambdaTree::new_variable("y".to_owned())
+                    )
+                )
+            },
             CNormalize | CN => {
                 let (term, count) = interpreter.strategy().normalize(terms[0].clone(), false);
                 println!("Number of reductions: {}", count);
@@ -89,6 +105,7 @@ impl Macro {
     fn help(&self) -> &str {
         use Macro::*;
         match self {
+            AlphaEq => "check for alpha equivalence and return Church-encoded boolean",
             CN => "shortcut for cnormalize",
             CNormalize => "normalize and show number of reductions performed",
             Dbg => "shortcut for debug",
@@ -111,6 +128,7 @@ impl Macro {
     pub fn nargs(&self) -> usize {
         use Macro::*;
         match self {
+            AlphaEq => 2,
             CNormalize | CN => 1,
             DeBruijn => 1,
             Debug | Dbg => 1,

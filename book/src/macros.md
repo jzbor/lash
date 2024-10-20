@@ -5,6 +5,7 @@ For example you might want to print out a term, resolve its named terms or reduc
 Macros are only evaluated once when the term is initially parsed, after that tey are just replaced with the terms they return.
 
 ## Available Macros:
+* `!alphaeq` - test two terms for alpha equivalence and return a Church-encoded boolean
 * `!cnormalize` - like `!normalize` but shows number of reductions performed
 * `!debruijn` - print out DeBruijn form of the argument term
 * `!debug` - prints out the argument term
