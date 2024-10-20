@@ -12,31 +12,6 @@ use crate::error::{LashError, LashResult};
 use crate::interpreter::Interpreter;
 use crate::lambda::*;
 
-enum_with_values! {
-    #[derive(Debug, Clone, Copy)]
-    #[cfg_attr(feature = "std", derive(clap::ValueEnum))]
-    #[cfg_attr(feature = "std", clap(rename_all = "lower"))]
-    vis pub enum Macro {
-        AlphaEq,
-        CN,
-        CNormalize,
-        Dbg,
-        DeBruijn,
-        Debug,
-        Macros,
-        N,
-        Normalize,
-        R,
-        Reduce,
-        Resolve,
-        Time,
-        VN,
-        VNormalize,
-        VR,
-        VReduce,
-    }
-}
-
 // Improved version of
 // https://stackoverflow.com/a/64678145/10854888
 macro_rules! enum_with_values {
@@ -58,6 +33,31 @@ macro_rules! enum_with_values {
 macro_rules! count {
     () => (0usize);
     ( $x:tt $($xs:tt)* ) => (1usize + $crate::count!($($xs)*));
+}
+
+enum_with_values! {
+    #[derive(Debug, Clone, Copy)]
+    #[cfg_attr(feature = "std", derive(clap::ValueEnum))]
+    #[cfg_attr(feature = "std", clap(rename_all = "lower"))]
+    vis pub enum Macro {
+        AlphaEq,
+        CN,
+        CNormalize,
+        Dbg,
+        DeBruijn,
+        Debug,
+        Macros,
+        N,
+        Normalize,
+        R,
+        Reduce,
+        Resolve,
+        Time,
+        VN,
+        VNormalize,
+        VR,
+        VReduce
+    }
 }
 
 impl Macro {

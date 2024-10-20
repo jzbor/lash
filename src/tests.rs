@@ -1,8 +1,9 @@
+use crate::environment::{Environment, StdEnvironment};
 use crate::interpreter::Interpreter;
 
 
 #[allow(dead_code)]
-fn test_statement(interpreter: &mut Interpreter, input: &str, expected: &str) {
+fn test_statement<E: Environment>(interpreter: &mut Interpreter<E>, input: &str, expected: &str) {
     let statement = interpreter.interpret_line(input).unwrap();
     let serialized = format!("{}", statement);
     assert_eq!(serialized, expected);
@@ -11,13 +12,15 @@ fn test_statement(interpreter: &mut Interpreter, input: &str, expected: &str) {
 
 #[test]
 fn id() {
-    let mut interpreter = Interpreter::new();
+    let env = StdEnvironment::new();
+    let mut interpreter = Interpreter::new(env);
     test_statement(&mut interpreter, "!normalize ((\\x . x) x)", "x");
 }
 
 #[test]
 fn church_addition() {
-    let mut interpreter = Interpreter::new();
+    let env = StdEnvironment::new();
+    let mut interpreter = Interpreter::new(env);
     interpreter.interpret_std().unwrap();
     interpreter.set_church_num_enabled(true);
     // 5 + 2
@@ -32,7 +35,8 @@ fn church_addition() {
 
 #[test]
 fn issue_1_capture_avoidance() {
-    let mut interpreter = Interpreter::new();
+    let env = StdEnvironment::new();
+    let mut interpreter = Interpreter::new(env);
     // the full term
     test_statement(&mut interpreter,
         "!normalize ((\\f x. f (f x)) (\\f x. f (f x)))",

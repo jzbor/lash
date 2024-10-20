@@ -16,9 +16,11 @@ mod parsing;
 mod r#macro;
 mod stdlib;
 mod strategy;
+
+#[cfg(test)]
 mod tests;
 
-use crate::environment::Environment;
+use environment::Environment;
 
 
 const DOCS_URL: &str = "https://jzbor.de/lash";
