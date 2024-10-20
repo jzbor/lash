@@ -52,7 +52,7 @@ impl Display for DeBruijnNode {
         match self {
             FreeVariable(name) => write!(f, "{}", name),
             BoundVariable(i) => write!(f, "{}", i),
-            Abstraction(term) => write!(f, "{} {}", '\\', term.to_string()),
+            Abstraction(term) => write!(f, "\\ {}", term),
             Application(term1, term2) => {
                 let s1 = if let DeBruijnNode::FreeVariable(name) = &**term1 {
                     name.to_string()
@@ -61,14 +61,14 @@ impl Display for DeBruijnNode {
                 } else if let DeBruijnNode::Application(_, _) = &**term1 {
                     term1.to_string()
                 } else {
-                    format!("({})", term1.to_string())
+                    format!("({})", term1)
                 };
                 let s2 = if let DeBruijnNode::FreeVariable(name) = &**term2 {
                     name.to_string()
                 } else if let DeBruijnNode::BoundVariable(i) = &**term2 {
                     format!("{}", i)
                 } else {
-                    format!("({})", term2.to_string())
+                    format!("({})", term2)
                 };
                 write!(f, "{} {}", s1, s2)
             },

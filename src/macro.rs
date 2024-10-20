@@ -103,7 +103,7 @@ impl Macro {
                 term
             },
             DeBruijn => {
-                println!("{}", DeBruijnNode::from(terms[0].clone()).to_string());
+                println!("{}", DeBruijnNode::from(terms[0].clone()));
                 terms[0].clone()
             },
             Debug | Dbg => {
@@ -180,7 +180,27 @@ impl Macro {
 
 impl Display for Macro {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        writeln!(f, "!{}", self)
+        use Macro::*;
+        let name = match self {
+            AlphaEq => "alphaeq",
+            CN => "cn",
+            CNormalize => "cnormalize",
+            Dbg => "dbg",
+            DeBruijn => "debruijn",
+            Debug => "debug",
+            Macros => "macros",
+            N => "n",
+            Normalize => "normalize",
+            R => "r",
+            Reduce => "reduce",
+            Resolve => "resolve",
+            Time => "time",
+            VN => "vn",
+            VNormalize => "vnormalize",
+            VR => "vr",
+            VReduce => "vreduce",
+        };
+        write!(f, "!{}", name)
     }
 }
 

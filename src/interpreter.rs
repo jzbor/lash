@@ -6,6 +6,7 @@ use alloc::string::String;
 use core::fmt;
 use core::fmt::Write;
 use core::str;
+use core::str::FromStr;
 
 use crate::error::*;
 use crate::environment::*;

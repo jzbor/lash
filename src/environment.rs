@@ -10,6 +10,7 @@ pub trait Environment: {
     type Instant;
 
     fn stdout(&mut self) -> &mut impl Write;
+    #[allow(dead_code)]
     fn stderr(&mut self) -> &mut impl Write;
     fn load(&self, file: &str) -> LashResult<String>;
     fn now(&self) -> Self::Instant;
@@ -29,6 +30,12 @@ struct StdStdout {}
 struct StdStderr {}
 
 #[cfg(feature = "std")]
+impl Default for StdEnvironment {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StdEnvironment {
     pub fn new() -> Self {
         StdEnvironment {
@@ -51,7 +58,7 @@ impl Environment for StdEnvironment {
     }
 
     fn load(&self, file: &str) -> LashResult<String> {
-        std::fs::read_to_string(&file)
+        std::fs::read_to_string(file)
             .map_err(|e| LashError::new_file_error(file.into(), Some(e)))
     }
 

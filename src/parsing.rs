@@ -243,10 +243,7 @@ fn match_macro(s: Span) -> IResult<LambdaTree> {
     };
 
     let (rest, args) = opt(match_macro_args)(rest)?;
-    let lambdas = match args {
-        Some(lambdas) => lambdas,
-        None => Vec::new(),
-    };
+    let lambdas = args.unwrap_or_default();
 
     Ok((rest, LambdaTree::new_macro(m, lambdas)))
 }

@@ -4,6 +4,7 @@ use alloc::borrow::ToOwned;
 use alloc::format;
 use alloc::string::String;
 use core::fmt::Write;
+use core::str::FromStr;
 
 #[cfg(feature = "std")]
 use colored::Colorize;
@@ -21,15 +22,6 @@ pub enum Strategy {
 }
 
 impl Strategy {
-    pub fn from_str(s: &str) -> Result<Self, ()> {
-        match s {
-            "applicative" => Ok(Self::Applicative),
-            "normal" => Ok(Self::Normal),
-            "callbyname" => Ok(Self::CallByName),
-            _ => Err(()),
-        }
-    }
-
     pub fn normalize(&self, term: LambdaTree, verbose: bool, out: &mut impl Write) -> (LambdaTree, usize) {
         let mut current = term;
         let mut nreductions = 0;
@@ -260,5 +252,18 @@ impl Strategy {
 impl Default for Strategy {
     fn default() -> Self {
         Self::Applicative
+    }
+}
+
+impl FromStr for Strategy {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "applicative" => Ok(Self::Applicative),
+            "normal" => Ok(Self::Normal),
+            "callbyname" => Ok(Self::CallByName),
+            _ => Err(()),
+        }
     }
 }
