@@ -1,5 +1,6 @@
 extern crate alloc;
 
+use alloc::borrow::ToOwned;
 use alloc::string::ToString;
 use alloc::vec::Vec;
 use core::fmt::{Display, Write};
@@ -77,14 +78,14 @@ impl Macro {
         let mut stdout = interpreter.env().stdout();
         let term = match self {
             AlphaEq => if terms[0].alpha_eq(&terms[1]) {
-                println!("Terms are alpha equivalent");
+                writeln!(stdout, "Terms are alpha equivalent")?;
                 LambdaTree::new_abstraction("x".to_owned(),
                     LambdaTree::new_abstraction("y".to_owned(),
                         LambdaTree::new_variable("x".to_owned())
                     )
                 )
             } else {
-                println!("Terms are NOT alpha equivalent");
+                writeln!(stdout, "Terms are NOT alpha equivalent")?;
                 LambdaTree::new_abstraction("x".to_owned(),
                     LambdaTree::new_abstraction("y".to_owned(),
                         LambdaTree::new_variable("y".to_owned())
@@ -97,7 +98,7 @@ impl Macro {
                 term
             },
             DeBruijn => {
-                println!("{}", DeBruijnNode::from(terms[0].clone()));
+                writeln!(stdout, "{}", DeBruijnNode::from(terms[0].clone()))?;
                 terms[0].clone()
             },
             Debug => {

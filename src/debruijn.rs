@@ -1,4 +1,12 @@
-use std::{collections::HashMap, fmt::Display};
+extern crate alloc;
+
+use alloc::borrow::ToOwned;
+use alloc::boxed::Box;
+use alloc::collections::BTreeMap;
+use alloc::format;
+use alloc::string::String;
+use alloc::string::ToString;
+use core::fmt::Display;
 
 use crate::lambda::{LambdaNode, LambdaTree};
 
@@ -11,7 +19,7 @@ pub enum DeBruijnNode {
     Application(Box<DeBruijnNode>, Box<DeBruijnNode>),
 }
 
-fn to_debrujin_helper(l: LambdaTree, map: &mut HashMap<String, usize>, depth: usize) -> DeBruijnNode {
+fn to_debrujin_helper(l: LambdaTree, map: &mut BTreeMap<String, usize>, depth: usize) -> DeBruijnNode {
     match l.node() {
         LambdaNode::Variable(name) => {
             if map.contains_key(name.as_str()) {
@@ -42,12 +50,12 @@ fn to_debrujin_helper(l: LambdaTree, map: &mut HashMap<String, usize>, depth: us
 
 impl From<LambdaTree> for DeBruijnNode {
     fn from(value: LambdaTree) -> Self {
-        to_debrujin_helper(value, &mut HashMap::new(), 0)
+        to_debrujin_helper(value, &mut BTreeMap::new(), 0)
     }
 }
 
 impl Display for DeBruijnNode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         use DeBruijnNode::*;
         match self {
             FreeVariable(name) => write!(f, "{}", name),

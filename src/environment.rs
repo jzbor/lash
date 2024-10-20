@@ -36,6 +36,7 @@ impl Default for StdEnvironment {
     }
 }
 
+#[cfg(feature = "std")]
 impl StdEnvironment {
     pub fn new() -> Self {
         StdEnvironment {
