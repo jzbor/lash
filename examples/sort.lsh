@@ -9,14 +9,14 @@ four := !n (SUCC three);
 iszero := λn.n (λx. FALSE) TRUE;
 
 
-leh := \f x y. IFTHENELSE
+le' := \f x y. IFTHENELSE
 		(OR (iszero x) (iszero y))
 		(iszero x)
 		(f f (PRED x) (PRED y));
-le := leh leh;
+le := le' le';
 
 
-inserth := \f e l. IFTHENELSE
+insert' := \f e l. IFTHENELSE
 		(ISNIL l)
 		(CONS e l)
 		(IFTHENELSE
@@ -24,14 +24,14 @@ inserth := \f e l. IFTHENELSE
 			(CONS e l)
 			(CONS (HEAD l) (f f e (TAIL l)))
 		);
-insert := inserth inserth;
+insert := insert' insert';
 
 
-sorth := \f l. IFTHENELSE
+sort' := \f l. IFTHENELSE
 		(ISNIL l)
 		NIL
 		(insert (HEAD l) (f f (TAIL l)));
-sort := sorth sorth;
+sort := sort' sort';
 
 
 @echo ""

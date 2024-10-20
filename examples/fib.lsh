@@ -4,14 +4,14 @@
 
 iszero := λn.n (λx. FALSE) TRUE;
 
-fibh := \f x. IFTHENELSE
+fib' := \f x. IFTHENELSE
 		(iszero x)
 		(\f x . x)
 		(IFTHENELSE
 			(iszero (PRED x))
 			(\f x . f x)
 			(ADD (f f (PRED x)) (f f (PRED (PRED x)))));
-fib := fibh fibh;
+fib := fib' fib';
 
 @echo ""
 @echo "6. Fibonacci number"
