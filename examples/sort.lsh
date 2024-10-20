@@ -36,9 +36,9 @@ sort := sorth sorth;
 
 @echo ""
 @echo "Unsorted list:"
-listunsorted := !dbg (!n (CONS three (CONS one (CONS four ((CONS two NIL))))));
+listunsorted := !debug (!norm (CONS three (CONS one (CONS four ((CONS two NIL))))));
 
 @echo ""
 @echo "After sorting:"
-!dbg (!time (!cn (sort listunsorted)));
+!debug (!time (!cnorm (sort listunsorted)));
 

@@ -15,4 +15,4 @@ fib := fibh fibh;
 
 @echo ""
 @echo "6. Fibonacci number"
-listunsorted := !dbg (!cn (fib $6));
+listunsorted := !debug (!cnorm (fib $6));

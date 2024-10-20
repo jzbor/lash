@@ -2,7 +2,7 @@
 
 Macros allow you to modify Lambda terms at interpretation time.
 For example you might want to print out a term, resolve its named terms or reduce/normalize it.
-Macros are only evaluated once when the term is initially parsed, after that tey are just replaced with the terms they return.
+Macros are only evaluated once when the term is initially parsed, after that they are just replaced with the terms they return.
 
 ## Available Macros:
 * `!alphaeq` - test two terms for alpha equivalence and return a Church-encoded boolean
@@ -15,6 +15,8 @@ Macros are only evaluated once when the term is initially parsed, after that tey
 * `!resolve` - resolve named terms and church numerals
 * `!time` - time the macro execution of term inside
 * `!vnormalize`/`!vreduce` - like `!normalize` and `!reduce`, but prints the reduction steps
+
+You may use any unambiguous prefix of a term as shorthand for that term
 
 ## Examples
 ```

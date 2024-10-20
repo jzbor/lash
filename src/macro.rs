@@ -41,21 +41,15 @@ enum_with_values! {
     #[cfg_attr(feature = "std", clap(rename_all = "lower"))]
     vis pub enum Macro {
         AlphaEq,
-        CN,
         CNormalize,
-        Dbg,
         DeBruijn,
         Debug,
         Macros,
-        N,
         Normalize,
-        R,
         Reduce,
         Resolve,
         Time,
-        VN,
         VNormalize,
-        VR,
         VReduce
     }
 }
@@ -97,7 +91,7 @@ impl Macro {
                     )
                 )
             },
-            CNormalize | CN => {
+            CNormalize => {
                 let (term, count) = strategy.normalize(terms[0].clone(), false, &mut stdout);
                 writeln!(stdout, "Number of reductions: {}", count)?;
                 term
@@ -106,13 +100,13 @@ impl Macro {
                 println!("{}", DeBruijnNode::from(terms[0].clone()));
                 terms[0].clone()
             },
-            Debug | Dbg => {
+            Debug => {
                 writeln!(stdout, "{}", terms[0].clone())?;
                 terms[0].clone()
             },
             Macros => { Self::print_all(&mut stdout)?; LambdaTree::new_macro(self, terms) },
-            Normalize | N => strategy.normalize(terms[0].clone(), false, &mut stdout).0,
-            Reduce | R => if let Some(reduced) = strategy.reduce(terms[0].clone(), false, &mut stdout) {
+            Normalize => strategy.normalize(terms[0].clone(), false, &mut stdout).0,
+            Reduce => if let Some(reduced) = strategy.reduce(terms[0].clone(), false, &mut stdout) {
                 reduced
             } else {
                 terms[0].clone()
@@ -125,8 +119,8 @@ impl Macro {
                 writeln!(stdout, "Time elapsed: {}ms", duration.as_millis() as u64)?;
                 terms[0].clone()
             },
-            VNormalize | VN => strategy.normalize(terms[0].clone(), true, &mut stdout).0,
-            VReduce | VR => if let Some(reduced) = strategy.reduce(terms[0].clone(), true, &mut stdout) {
+            VNormalize => strategy.normalize(terms[0].clone(), true, &mut stdout).0,
+            VReduce => if let Some(reduced) = strategy.reduce(terms[0].clone(), true, &mut stdout) {
                 reduced
             } else {
                 terms[0].clone()
@@ -140,21 +134,15 @@ impl Macro {
         use Macro::*;
         match self {
             AlphaEq => "check for alpha equivalence and return Church-encoded boolean",
-            CN => "shortcut for cnormalize",
             CNormalize => "normalize and show number of reductions performed",
-            Dbg => "shortcut for debug",
             DeBruijn => "print out DeBruijn form",
             Debug => "print out current term (useful in non-interactive mode)",
             Macros => "print available macros",
-            N => "shortcut for normalize",
             Normalize => "normalize the given term",
-            R => "shortcut for reduce",
             Reduce => "reduce the given term",
             Resolve => "resolve all named terms",
             Time => "time the execution of the macros contained inside the term",
-            VN => "shortcut for vnormalize",
             VNormalize => "visually normalize the given term",
-            VR => "shortcut for vreduce",
             VReduce => "visually reduce the given term",
         }
     }
@@ -163,16 +151,16 @@ impl Macro {
         use Macro::*;
         match self {
             AlphaEq => 2,
-            CNormalize | CN => 1,
+            CNormalize => 1,
             DeBruijn => 1,
-            Debug | Dbg => 1,
+            Debug => 1,
             Macros => 0,
-            Normalize | N => 1,
-            Reduce | R => 1,
+            Normalize => 1,
+            Reduce => 1,
             Resolve => 1,
             Time => 1,
-            VNormalize | VN => 1,
-            VReduce | VR => 1,
+            VNormalize => 1,
+            VReduce => 1,
         }
     }
 
@@ -183,24 +171,18 @@ impl Display for Macro {
         use Macro::*;
         let name = match self {
             AlphaEq => "alphaeq",
-            CN => "cn",
             CNormalize => "cnormalize",
-            Dbg => "dbg",
             DeBruijn => "debruijn",
             Debug => "debug",
             Macros => "macros",
-            N => "n",
             Normalize => "normalize",
-            R => "r",
             Reduce => "reduce",
             Resolve => "resolve",
             Time => "time",
-            VN => "vn",
             VNormalize => "vnormalize",
-            VR => "vr",
             VReduce => "vreduce",
         };
-        write!(f, "!{}", name)
+        write!(f, "{}", name)
     }
 }
 
@@ -209,22 +191,25 @@ impl FromStr for Macro {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use Macro::*;
         match s {
-            "cn" => Ok(CN),
             "cnormalize" => Ok(CNormalize),
-            "dbg" => Ok(Dbg),
             "debug" => Ok(Debug),
             "macros" => Ok(Macros),
-            "n" => Ok(N),
             "normalize" => Ok(Normalize),
-            "r" => Ok(R),
             "reduce" => Ok(Reduce),
             "resolve" => Ok(Resolve),
             "time" => Ok(Time),
-            "vn" => Ok(VN),
             "vnormalize" => Ok(VNormalize),
-            "vr" => Ok(VR),
             "vreduce" => Ok(VReduce),
-            _ => Err(()),
+            _ => {
+                let mut candidates = Macro::VALUES.iter().filter(|m| m.to_string().starts_with(s));
+                match candidates.next() {
+                    Some(m) => match candidates.next() {
+                        Some(_) => Err(()),
+                        None => Ok(*m),
+                    },
+                    None => Err(()),
+                }
+            },
         }
     }
 }

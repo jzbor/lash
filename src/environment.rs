@@ -74,7 +74,7 @@ impl Environment for StdEnvironment {
 #[cfg(feature = "std")]
 impl core::fmt::Write for StdStdout {
     fn write_str(&mut self, s: &str) -> std::fmt::Result {
-        println!("{}", s);
+        print!("{}", s);
         Ok(())
     }
 }
@@ -82,7 +82,7 @@ impl core::fmt::Write for StdStdout {
 #[cfg(feature = "std")]
 impl core::fmt::Write for StdStderr {
     fn write_str(&mut self, s: &str) -> std::fmt::Result {
-        eprintln!("{}", s);
+        eprint!("{}", s);
         Ok(())
     }
 }
