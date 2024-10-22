@@ -16,6 +16,7 @@ mod parsing;
 mod r#macro;
 mod stdlib;
 mod strategy;
+mod typing;
 
 #[cfg(test)]
 mod tests;

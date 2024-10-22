@@ -9,6 +9,7 @@ pub mod parsing;
 pub mod r#macro;
 pub mod stdlib;
 pub mod strategy;
+pub mod typing;
 
 #[cfg(test)]
 mod tests;

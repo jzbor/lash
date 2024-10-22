@@ -14,6 +14,7 @@ Macros are only evaluated once when the term is initially parsed, after that the
 * `!reduce` - execute one reduction step on the argument term
 * `!resolve` - resolve named terms and church numerals
 * `!time` - time the macro execution of term inside
+* `!type` - try to infer a type for the given term
 * `!vnormalize`/`!vreduce` - like `!normalize` and `!reduce`, but prints the reduction steps
 
 You may use any unambiguous prefix of a term as shorthand for that term

@@ -12,6 +12,7 @@ use crate::environment::Environment;
 use crate::error::{LashError, LashResult};
 use crate::interpreter::Interpreter;
 use crate::lambda::*;
+use crate::typing;
 
 // Improved version of
 // https://stackoverflow.com/a/64678145/10854888
@@ -50,6 +51,7 @@ enum_with_values! {
         Reduce,
         Resolve,
         Time,
+        Type,
         VNormalize,
         VReduce
     }
@@ -126,6 +128,13 @@ impl Macro {
             } else {
                 terms[0].clone()
             },
+            Type => {
+                match typing::infer(terms[0].clone()) {
+                    Ok(t) => writeln!(stdout, "Infered type: {}", t)?,
+                    Err(e) => writeln!(stdout, "Cannot infer type: {}", e)?,
+                }
+                terms[0].clone()
+            },
         };
 
         Ok(term)
@@ -143,6 +152,7 @@ impl Macro {
             Reduce => "reduce the given term",
             Resolve => "resolve all named terms",
             Time => "time the execution of the macros contained inside the term",
+            Type => "try to infer a type for the given term",
             VNormalize => "visually normalize the given term",
             VReduce => "visually reduce the given term",
         }
@@ -160,6 +170,7 @@ impl Macro {
             Reduce => 1,
             Resolve => 1,
             Time => 1,
+            Type => 1,
             VNormalize => 1,
             VReduce => 1,
         }
@@ -182,6 +193,7 @@ impl Display for Macro {
             Time => "time",
             VNormalize => "vnormalize",
             VReduce => "vreduce",
+            Type => "type",
         };
         write!(f, "{}", name)
     }
