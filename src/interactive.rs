@@ -14,7 +14,7 @@ pub fn repl<E: Environment>(interpreter: &mut Interpreter<E>) {
             Ok(input) => {
                 rl.add_history_entry(input.as_str());
                 match interpreter.interpret_line(&input) {
-                    Ok(statement) => println!("{}\n", statement),
+                    Ok(statement) => println!("\n==> {}\n", statement),
                     Err(e) => eprintln!("{}\n", e),
                 }
             },
