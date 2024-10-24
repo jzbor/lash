@@ -35,7 +35,7 @@ struct Args {
     file: Option<PathBuf>,
 
     /// Set initial strategy
-    #[clap(long, value_enum, default_value_t = Strategy::Applicative)]
+    #[clap(long, value_enum, default_value_t = Strategy::Normal)]
     strategy: Strategy,
 
     /// Print available macros and exit

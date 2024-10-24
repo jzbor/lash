@@ -242,7 +242,7 @@ impl Strategy {
 
 impl Default for Strategy {
     fn default() -> Self {
-        Self::Applicative
+        Self::Normal
     }
 }
 
