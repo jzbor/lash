@@ -42,13 +42,9 @@ struct Args {
     #[clap(long)]
     print_macros: bool,
 
-    /// Add std terms to the environment
-    #[clap(long)]
-    std: bool,
-
-    /// Enable church numerals
-    #[clap(long)]
-    church_nums: bool,
+    /// Disable standard environment and church numerals
+    #[clap(short, long)]
+    strict: bool,
 
     /// Open documentation in the browser
     #[clap(long)]
@@ -75,8 +71,8 @@ fn main() {
     let env = StdEnvironment::new();
     let mut interpreter = Interpreter::new(env);
     interpreter.set_strategy(args.strategy);
-    interpreter.set_church_num_enabled(args.church_nums);
-    if args.std {
+    interpreter.set_church_num_enabled(!args.strict);
+    if !args.strict {
         interpreter.interpret_std().unwrap();
     }
 
