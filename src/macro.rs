@@ -71,6 +71,8 @@ impl Macro {
 
     pub fn apply<E: Environment>(self, interpreter: &mut Interpreter<E>, terms: Vec<LambdaTree>, duration: Duration) -> LashResult<LambdaTree> {
         use Macro::*;
+        // println!("Apply {} to {}", self, terms.iter().map(|t| t.to_string()).collect::<Vec<_>>().join(" "));
+        // println!("Apply {} to {:#?}", self, terms);
 
         if terms.len() != self.nargs() {
             return Err(LashError::new_macro_arg_error(self, self.nargs(), terms.len()));

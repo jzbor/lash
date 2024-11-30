@@ -1,5 +1,5 @@
-@set strategy normal
-@usestd
+@set strategy normal;
+@usestd;
 
 
 one := !n (SUCC NIL);
@@ -34,11 +34,11 @@ sort' := \f l. IFTHENELSE
 sort := sort' sort';
 
 
-@echo ""
-@echo "Unsorted list:"
+@echo "";
+@echo "Unsorted list:";
 listunsorted := !debug (!norm (CONS three (CONS one (CONS four ((CONS two NIL))))));
 
-@echo ""
-@echo "After sorting:"
+@echo "";
+@echo "After sorting:";
 !debug (!time (!cnorm (sort listunsorted)));
 

@@ -3,9 +3,10 @@ extern crate alloc;
 use alloc::borrow::ToOwned;
 use alloc::format;
 use alloc::string::{String, ToString};
+use pest::RuleType;
 use core::fmt::Display;
 
-use crate::{parsing, r#macro::Macro};
+use crate::r#macro::Macro;
 
 pub type LashResult<T> = Result<T, LashError>;
 
@@ -25,6 +26,7 @@ pub enum LashErrorType {
     SetKeyError,
     SetValueError,
     SyntaxError,
+    UnknownMacroError,
     #[cfg(not(feature = "std"))]
     NotFoundError,
     #[cfg(not(feature = "std"))]
@@ -66,6 +68,13 @@ impl LashError {
         }
     }
 
+    pub fn new_syntax_error<T: RuleType>(err: pest::error::Error<T>) -> Self {
+        LashError {
+            error_type: LashErrorType::SyntaxError,
+            message: format!("\n{}", err),
+        }
+    }
+
     pub fn new_set_key_error(key: &str) -> Self {
         LashError {
             error_type: LashErrorType::SetKeyError,
@@ -77,6 +86,13 @@ impl LashError {
         LashError {
             error_type: LashErrorType::SetValueError,
             message: format!("unknown value '{}'", value),
+        }
+    }
+
+    pub fn new_unknown_macro_error(name: &str) -> Self {
+        LashError {
+            error_type: LashErrorType::UnknownMacroError,
+            message: format!("unknown macro '{}'", name),
         }
     }
 
@@ -108,30 +124,16 @@ impl Display for LashError {
             FileError => "File Error",
             FormatError => "Format Error",
             MacroArgError => "Macro Argument Error",
+            SyntaxError => "Syntax Error",
             SetKeyError => "Set Key Error",
             SetValueError => "Set Value Error",
-            SyntaxError => "Syntax Error",
+            UnknownMacroError => "Unknown Macro Error",
             #[cfg(not(feature = "std"))]
             NotFoundError => "Not Found",
             #[cfg(not(feature = "std"))]
             NotSupportedError => "Not supported",
         };
         write!(f, "{}: {}", prefix, self.message)
-    }
-}
-
-impl From<nom::Err<parsing::ParseError<'_>>> for LashError {
-    fn from(value: nom::Err<parsing::ParseError<'_>>) -> Self {
-        use nom::Err::*;
-        let message = match value {
-            Incomplete(_) => "incomplete data".to_owned(),
-            Error(e) => format!("{}", e),
-            Failure(e) => format!("{}", e),
-        };
-        LashError {
-            error_type: LashErrorType::SyntaxError,
-            message,
-        }
     }
 }
 

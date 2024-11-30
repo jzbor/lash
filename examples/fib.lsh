@@ -1,6 +1,6 @@
-@usestd
-@set strategy normal
-@set numerals true
+@usestd;
+@set strategy normal;
+@set numerals true;
 
 iszero := λn.n (λx. FALSE) TRUE;
 
@@ -13,6 +13,6 @@ fib' := \f x. IFTHENELSE
 			(ADD (f f (PRED x)) (f f (PRED (PRED x)))));
 fib := fib' fib';
 
-@echo ""
-@echo "6. Fibonacci number"
+@echo "";
+@echo "6. Fibonacci number";
 listunsorted := !debug (!cnorm (fib $6));

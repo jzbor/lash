@@ -1,8 +1,13 @@
-use std::cell::RefCell;
-use std::cmp;
-use std::collections::BTreeMap;
-use std::fmt::Display;
-use std::rc::Rc;
+extern crate alloc;
+
+use alloc::boxed::Box;
+use alloc::collections::BTreeMap;
+use alloc::format;
+use alloc::rc::Rc;
+use alloc::string::{String, ToString};
+use core::cell::RefCell;
+use core::cmp;
+use core::fmt::Display;
 
 use crate::lambda::{LambdaNode, LambdaTree};
 
@@ -65,7 +70,7 @@ impl TypeMachine {
                     _ => level,
                 };
                 // *tv2.borrow_mut() = Unbound(name.to_owned(), min_level);
-                unsafe { *tv2.as_ptr() = Unbound(name.to_owned(), min_level); }
+                unsafe { *tv2.as_ptr() = Unbound(name.to_string(), min_level); }
                 Ok(())
             } else if let Link(ty) = &*tv2.borrow() {
                 Self::occurs(tv, ty)
@@ -151,7 +156,7 @@ impl TypeMachine {
             Abstraction(x, e) => {
                 let ty_x = self.newvar();
                 let mut nextenv = env.clone();
-                nextenv.insert(x.to_owned(), ty_x.clone());
+                nextenv.insert(x.to_string(), ty_x.clone());
                 let ty_e = self.infer(&nextenv, e.clone())?;
                 Ok(TypeArrow(Box::new(ty_x), Box::new(ty_e)))
             },
@@ -174,7 +179,7 @@ pub fn infer(lambda: LambdaTree) -> Result<Type, String> {
 }
 
 impl Display for Type {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         use Type::*;
         match self {
             TypeVar(var) => write!(f, "{}", var.borrow()),
@@ -184,7 +189,7 @@ impl Display for Type {
 }
 
 impl Display for TypeVariable {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         use TypeVariable::*;
         match self {
             Unbound(u, _) => write!(f, "{}", u),

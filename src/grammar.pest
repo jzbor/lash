@@ -1,0 +1,28 @@
+statements  = { SOI ~ ((directive | assignment | lambda ) ~ ";")+ ~ EOI }
+statement   = { SOI ~ (directive | assignment | lambda) ~ EOI }
+directive   = ${ "@" ~ (directive_set | directive_echo | directive_include | directive_usestd)}
+assignment  = { variable ~ ":=" ~ lambda }
+
+lambda      = { macro | abstraction | application }
+abstraction = { lambda_sign ~ variable+ ~ "." ~ lambda }
+application = { group+ }
+group       = { variable | church | "(" ~ lambda ~ ")" }
+macro       = { "!" ~ macro_name ~ group+}
+
+lambda_sign = _{ "\\" | "λ" }
+church      = @{ "$" ~ ASCII_ALPHANUMERIC+ }
+variable    = @{ (ASCII_ALPHANUMERIC | "'")+ }
+
+directive_set     = { "set" ~ WHITESPACE ~ key ~ WHITESPACE ~ value }
+directive_echo    = { "echo" ~ WHITESPACE ~ "\"" ~ quoted_string ~ "\"" }
+directive_include = { "include" ~ WHITESPACE ~ "\"" ~ quoted_string ~ "\"" }
+directive_usestd  = { "usestd" }
+key               = @{ ASCII_ALPHA_LOWER+ }
+value             = @{ ASCII_ALPHA_LOWER+ }
+quoted_string     = @{ (!"\"" ~ ASCII)* }
+macro_name        = @{ ASCII_ALPHA_LOWER* }
+
+
+
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }

@@ -59,9 +59,7 @@ impl<E: Environment> Interpreter<E> {
 
     pub fn interpret_contents(&mut self, content: &str) -> LashResult<()> {
         use parsing::Statement::*;
-        let (rest, statements) = parsing::match_statements(parsing::Span::new(content))?;
-        let (rest, _) = parsing::finish(rest)?;
-        assert!(rest.is_empty(), "{:?}", rest);
+        let statements = parsing::parse_statements(content)?;
 
         for statement in statements {
             match statement {
@@ -69,7 +67,6 @@ impl<E: Environment> Interpreter<E> {
                     let term = self.process_lambda_term(term)?;
                     self.named_terms.insert(name.clone(), Rc::new(NamedTerm::new(name, term)));
                 },
-                Comment => {},
                 Lambda(term) => { self.process_lambda_term(term)?; },
                 Directive(directive) => self.apply_directive(directive)?,
             }
@@ -87,9 +84,7 @@ impl<E: Environment> Interpreter<E> {
 
     pub fn interpret_line(&mut self, line: &str) -> LashResult<parsing::Statement> {
         use parsing::Statement::*;
-        let (rest, statement) = parsing::match_statement(parsing::Span::new(line), false)?;
-        let (rest, _) = parsing::finish(rest)?;
-        assert!(rest.is_empty(), "{:?}", rest);
+        let statement = parsing::parse_statement(line)?;
 
         match statement.clone() {
             Assignment(name, term) => {
@@ -97,7 +92,6 @@ impl<E: Environment> Interpreter<E> {
                 self.named_terms.insert(name.clone(), Rc::new(NamedTerm::new(name.clone(), term.clone())));
                 Ok(Assignment(name, term))
             },
-            Comment => Ok(Comment),
             Lambda(term) => Ok(Lambda(self.process_lambda_term(term)?)),
             Directive(directive) => { self.apply_directive(directive)?; Ok(statement) },
         }
