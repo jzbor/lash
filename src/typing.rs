@@ -90,16 +90,17 @@ impl TypeMachine {
         if t1 == t2 { return Ok(()); }
 
         if let TypeVar(tv) = t1 {
-            if Link(Box::new(t1.clone())) == *tv.borrow() {
-                return Self::unify(t1, t2);
+            if let Link(tv) = &*tv.borrow() {
+                return Self::unify(&tv, t2);
             }
         }
 
         if let TypeVar(tv) = t2 {
-            if Link(Box::new(t2.clone())) == *tv.borrow() {
-                return Self::unify(t1, t2);
+            if let Link(tv) = &*tv.borrow() {
+                return Self::unify(t1, &tv);
             }
         }
+
 
         if let TypeVar(tv) = t1 {
             if is_unbound(tv) {
